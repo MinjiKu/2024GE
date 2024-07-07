@@ -1,6 +1,8 @@
 import numpy as np
 #%% data 정리
 
+# practice
+
 trade_flows = {#단위는 천 달러, Reporter별로 데이터가 다른 경우, 국제기구의 데이터 > 수출국의 데이터 순으로 신뢰함. 
     'Korea': {'USA': {'gim': 196766, 'steel':580234, 'semi':711206, 'car':72066},
               'China': {'gim':101299, 'steel':454598, 'semi':17018970, 'car':16041614},
