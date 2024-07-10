@@ -31,6 +31,14 @@ T = [[[0 * num_industries] * num_countries] * num_countries]
 
 pi = [[0 * num_industries] * num_countries]
 
+pi_hat = [[0 * num_industries] * num_countries]
+
+alpha = [[[0 * num_industries] * num_countries] * num_countries]
+
+tau_hat = [[[0 * num_industries] * num_countries] * num_countries]
+
+w_hat = [0 * num_countries]
+
 # welfare function
 def welfare(j, s):
     sum = 0
@@ -91,4 +99,13 @@ def eq_13(j):
         term3 += pi[j][s] / x2(j) * pi_hat[j][s]
 
     return term1 + term2 + term3
+
+#constraint 3
+def eq_10(i, s):
+    res = 0
+    for j in countries:
+        res += alpha[i][j][s] * (tau_hat[i][j][s] ** -sigma[s]) * (w_hat[i] ** (1 - sigma[s])) * (eq_12(j, s) ** (sigma[s]-1)) * eq_13(j) 
+    return res
+
+
     
