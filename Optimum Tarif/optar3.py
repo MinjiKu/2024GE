@@ -137,7 +137,7 @@ pi_hat = np.ones((num_countries, num_industries))
 alpha = np.ones((num_countries, num_countries, num_industries))
 tau_hat = np.ones((num_countries, num_countries, num_industries))
 t_hat = np.ones((num_countries, num_countries, num_industries))
-w_hat = np.ones(num_countries)
+# w_hat = np.ones(num_countries)
 
 # Welfare function
 def welfare(j, s):
@@ -182,6 +182,7 @@ def wL(j):
 def x2_hat(j):
     return 1  # Simplified
 
+# term2 of equation 13
 def complicated(j):
     total = 0
     for i in range(num_countries):
@@ -205,8 +206,10 @@ def eq_13(j):
 def eq_10(i, s):
     total = 0
     for j in range(num_countries):
+        # total += (alpha[i][j][s] * (tau_hat[i][j][s] ** -sigma[s]) * 
+        #           (w_hat[i] ** (1 - sigma[s])) * (eq_12(j, s) ** (sigma[s] - 1)) * eq_13(j))
         total += (alpha[i][j][s] * (tau_hat[i][j][s] ** -sigma[s]) * 
-                  (w_hat[i] ** (1 - sigma[s])) * (eq_12(j, s) ** (sigma[s] - 1)) * eq_13(j))
+                 (eq_12(j, s) ** (sigma[s] - 1)) * eq_13(j))
     return total
 
 # Constraints as a list
