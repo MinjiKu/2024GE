@@ -51,6 +51,7 @@ def eq_12(j, s):
     sum = 0
     for i in countries:
         sum += (gamma[i][j][s] * (tau[i][j][s] ** (1-sigma[s]))) ** ( 1 / (1 - sigma[s]))
+    return sum
 
 def wL(j):
     term2 = 0
@@ -72,8 +73,22 @@ def x2(j):
             term += t[i][j][s] * T[i][j][s]
     return term
 
+def complicated(j):
+    res = 0
+    for i in countries:
+        for s in industries:
+            # needs to be modified
+            res += t[i][j][s] * T[i][j][s] / x2(j) * (eq_12(j, s) ** (sigma[s] - 1))
+    return res
 
 # constraint 2
 def eq_13(j):
     term1 = wL(j) / x2(j) 
+    term2 = complicated(j)
+    term3 = 0
+
+    for s in industries:
+        term3 += pi[j][s] / x2(j) * pi_hat[j][s]
+
+    return term1 + term2 + term3
     
