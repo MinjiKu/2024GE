@@ -14,7 +14,11 @@ x = {country: {industry: 0 for industry in industries} for country in countries}
 p = {country: 0 for country in countries}
 gamma = {i: {j: {industry: 0 for industry in industries} for j in countries} for i in countries}
 tau = {i: {j: {industry: 1 for industry in industries} for j in countries} for i in countries}
-sigma = {industry: 1.1 for industry in industries}  # Avoid sigma[s] = 1 to prevent division by zero
+
+# Elasticities
+sigma = {'gim': 3.57, 'steel': 4.0, 'semi': 2.5, 'car': 1.8}
+# sigma = {industry: 1.1 for industry in industries}  # Avoid sigma[s] = 1 to prevent division by zero
+
 t = {i: {j: {industry: 0 for industry in industries} for j in countries} for i in countries}
 
 # T = {i: {j: {industry: 0 for industry in industries} for j in countries} for i in countries}
