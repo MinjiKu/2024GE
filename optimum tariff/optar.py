@@ -4,10 +4,10 @@ from scipy.optimize import minimize
 import pandas as pd
 import pickle
 
-file_path = 'tau_ijs.pickle'
+# file_path = 'tau_ijs.pickle'
 
-with open(file_path, 'rb') as file:
-    data = pickle.load(file)
+# with open(file_path, 'rb') as file:
+#     data = pickle.load(file)
 
 # print(data)
 
@@ -52,6 +52,7 @@ P_j = {'Germany':131.8924482,
         'USA':139.7357936
 }
 
+#계산가능
 gamma = {i: {j: {industry: np.random.rand() for industry in industries} for j in countries} for i in countries}
 
 # tau = {i: {j: {industry: np.random.rand() + 1 for industry in industries} for j in countries} for i in countries}
@@ -112,12 +113,16 @@ t = {'Korea': {'USA': {'gim': 0, 'steel': 0, 'semi': 0, 'car': 0},
                 'Japan': {'gim': 0.4, 'steel': 0, 'semi': 0, 'car': 0}, 
                 'China': {'gim': 0.2, 'steel': 0.05, 'semi': 0, 'car': 0.085}}}
 
+#계산가능
 pi = {country: {industry: np.random.rand() for industry in industries} for country in countries}
 
 pi_hat = {country: {industry: np.random.rand() for industry in industries} for country in countries}
+#계산가능
 alpha = {i: {j: {industry: np.random.rand() for industry in industries} for j in countries} for i in countries}
 tau_hat = {i: {j: {industry: np.random.rand() + 1 for industry in industries} for j in countries} for i in countries}
 t_hat = {i: {j: {industry: np.random.rand() + 1 for industry in industries} for j in countries} for i in countries}
+
+#원자료 80%
 w_hat = {country: 1 for country in countries}
 
 
@@ -196,8 +201,13 @@ def wL(j):
 
     return x2(j) - term2 - term3
 
-def x2_hat(j):
-    return 1  # Simplified
+# def x2_hat(j):
+#     sum = 0
+#     for s in industries:
+#         for i in countries:
+#             if i != j:
+#                 sum += x[j][i][s]
+#     return sum  
 
 def complicated(j):
     total = 0
@@ -205,8 +215,15 @@ def complicated(j):
         for s in industries:
             if i != j:
                 total += (t[i][j][s] * T[i][j][s] / x2(j) * t_hat[i][j][s] * 
-                        (eq_12(j, s) ** (sigma[s] - 1)) * (tau_hat[i][j][s] ** -sigma[s]) * 
-                        x2_hat(j) + (pi[j][s] / x2(j) * pi_hat[j][s]))
+                        (eq_12(j, s) ** (sigma[s] - 1)) * (tau_hat[i][j][s] ** -sigma[s]) + (pi[j][s] / x2(j) * pi_hat[j][s]))
+    return total
+
+def term3(j):
+    total = 0
+    for s in industries:
+        for i in countries:
+            if i != j:
+                total += (pi[j][s] / x2(j) * pi_hat[j][s]) * alpha[j][i][s] * (tau_hat[j][i][s] ** -sigma[s]) * (w_hat[i] ** (1 - sigma[s])) * (eq_12(i, s) ** (sigma[s] - 1))
     return total
 
 def eq_13(j):
@@ -216,6 +233,8 @@ def eq_13(j):
 
     for s in industries:
         term3 += pi[j][s] / x2(j) * pi_hat[j][s]
+    
+    sum = (term1) / (1 - term2 - term3)
 
     return term1 + term2 + term3 - 1  # Constraint to be equal to 1
 
