@@ -4,27 +4,31 @@ import numpy as np
 # practice
 
 trade_flows = {#단위는 천 달러, Reporter별로 데이터가 다른 경우, 국제기구의 데이터 > 수출국의 데이터 순으로 신뢰함. 
-    'Korea': {'USA': {'gim': , 'steel':580234, 'semi':711206, 'car':72066},
-              'China': {'gim':, 'steel':454598, 'semi':17018970, 'car':16041614},
-              'Japan':{'gim':, 'steel':903090, 'semi':308979, 'car':12433},
-              'Germany': {'gim':, 'steel':53993, 'semi':121601, 'car':657654},},
-    'USA': {'Korea': {'gim': , 'steel':95, 'semi':1092079, 'car':963233},
-            'China': {'gim':,'steel':820, 'semi':8306170, 'car':9030967 },
-            'Japan': {'gim': , 'steel':, 'semi':, 'car':},
-            'Germany':{'gim': , 'steel':, 'semi':, 'car':}},
-    'China': {'Korea': {'gim':28052,'steel':1803944, 'semi':17758308, 'car':1212067},
-              'USA': {'gim':113463,'steel':1325, 'semi':2324998, 'car':2610238},
-              'Japan': {'gim':306966, 'steel':83818, 'semi':3119372, 'car':2610238},
-              'Germany':{'gim':23529, 'steel':582, 'semi':1636760, 'car':1833607}},
-    'Japan': {'Korea': {'gim': 1329,'steel':2055349, 'semi':1921372, 'car':296440},
-              'USA': {'gim':,'steel':, 'semi':, 'car':},
-              'China': {'gim':, 'steel':777891, 'semi':6882555, 'car':6714475},
-              'Germany':{'gim':, 'steel':12493, 'semi':370643, 'car':2518119}},
-    'Germany': {'Korea': {'gim':,'steel':681, 'semi':628437, 'car':6468871},
-                'USA': {'gim':,'steel':, 'semi':, 'car':},
-              'Japan': {'gim':, 'steel':40, 'semi':434221, 'car':4282380},
-              'China':{'gim':, 'steel':5201, 'semi':1436904, 'car':16512164}}
-    
+    'China': {'Germany': {'gim': 38120.0, 'steel': 582083.0, 'semi': 1636760272.0, 'semi_memory': 119516177.0, 'car': 1833609424.0}, 
+              'Japan': {'gim': 20212670.0, 'steel': 83818503.0, 'semi': 3119372644.0, 'semi_memory': 535757854.0, 'car': 676593127.0}, 
+              'Korea': {'gim': 248805.0, 'steel': 1803944738.0, 'semi': 17758308479.0, 'semi_memory': 15219366037.0, 'car': 1212097485.0}, 
+              'USA': {'gim': 2316260.0, 'steel': 1358591.0, 'semi': 2325395161.0, 'semi_memory': 341810421.0, 'car': 2638478640.0}
+            }, 
+    'Germany': {'China': {'gim': 5240.909, 'steel': 5201023.164, 'semi': 1436904982.784, 'semi_memory': 19331662.139, 'car': 16512164176.907999}, 
+                'Japan': {'gim': 110, 'steel': 40160.479, 'semi': 434221845.892, 'semi_memory': 693421.891, 'car': 4282380533.395}, 
+                'Korea': {'gim': 2901.044, 'steel': 681557.131, 'semi': 628437924.905, 'semi_memory': 3842475.101, 'car': 6468871825.364}, 
+                'USA': {'gim': 432.507, 'steel': 51998280.381, 'semi': 519539446.911, 'semi_memory': 12024057.385, 'car': 28218169963.792}
+            }, 
+    'Japan': {'China': {'gim': 1022148.922, 'steel': 777891701.735, 'semi': 6882555655.434, 'semi_memory': 4241031727.742, 'car': 6714475489.161}, 
+              'Germany': {'gim': 206532.406, 'steel': 12493288.74, 'semi': 370643557.05, 'semi_memory': 40437523.308, 'car': 2518119540.9589996}, 
+              'Korea': {'gim': 53875.234, 'steel': 1873216558.145, 'semi': 3422673575.635, 'semi_memory': 20384960.593, 'car': 746276605.623}, 
+              'USA': {'gim': 8536153.179, 'steel': 141884446.045, 'semi': 965626242.279, 'semi_memory': 57715066.618, 'car': 43064344998.029}
+            }, 
+    'USA': {'China': {'gim': 608.0, 'steel': 487349.0, 'semi': 5134039304.0, 'semi_memory': 41034340.0, 'car': 6554910660.0}, 
+            'Germany': {'gim': 861724.0, 'steel': 75461.0, 'semi': 1083274042.0, 'semi_memory': 18155007.0, 'car': 9157689622.0}, 
+            'Japan': {'gim': 439247.0, 'steel': 1199499.0, 'semi': 496029963.0, 'semi_memory': 14758843.0, 'car': 1277318495.0}, 
+            'Korea': {'gim': 169675.0, 'steel': 180376.0, 'semi': 2204298430.0, 'semi_memory': 15309944.0, 'car': 2740915359.0}
+            }, 
+    'Korea': {'China': {'gim': 48062453.0, 'steel': 543488181.0, 'semi': 65634823868.0, 'semi_memory': 34451077419.0, 'car': 313316807.0}, 
+              'Germany': {'gim': 1055190.583, 'steel': 52080498.965, 'semi': 1280019502.842, 'semi_memory': 156173609.446, 'car': 11664726.954}, 
+              'Japan': {'gim': 104775627.791, 'steel': 921335767.82, 'semi': 1572825138.534, 'semi_memory': 419536125.294, 'car': 495404.448}, 
+              'USA': {'gim': 33963781.0, 'steel': 581315367.0, 'semi': 2400493160.0, 'semi_memory': 236493837.0, 'car': 883492635.0}
+            }
 }
 
 X = {
