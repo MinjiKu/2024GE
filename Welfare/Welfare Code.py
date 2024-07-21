@@ -4,12 +4,12 @@ import numpy as np
 # practice
 
 trade_flows = {#단위는 천 달러, Reporter별로 데이터가 다른 경우, 국제기구의 데이터 > 수출국의 데이터 순으로 신뢰함. 
-    'Korea': {'USA': {'gim': 196766, 'steel':580234, 'semi':711206, 'car':72066},
-              'China': {'gim':101299, 'steel':454598, 'semi':17018970, 'car':16041614},
-              'Japan':{'gim':187401, 'steel':903090, 'semi':308979, 'car':12433},
-              'Germany': {'gim':12194, 'steel':53993, 'semi':121601, 'car':657654},},
-    'USA': {'Korea': {'gim': 19076, 'steel':95, 'semi':1092079, 'car':963233},
-            'China': {'gim':15075,'steel':820, 'semi':8306170, 'car':9030967 },
+    'Korea': {'USA': {'gim': , 'steel':580234, 'semi':711206, 'car':72066},
+              'China': {'gim':, 'steel':454598, 'semi':17018970, 'car':16041614},
+              'Japan':{'gim':, 'steel':903090, 'semi':308979, 'car':12433},
+              'Germany': {'gim':, 'steel':53993, 'semi':121601, 'car':657654},},
+    'USA': {'Korea': {'gim': , 'steel':95, 'semi':1092079, 'car':963233},
+            'China': {'gim':,'steel':820, 'semi':8306170, 'car':9030967 },
             'Japan': {'gim': , 'steel':, 'semi':, 'car':},
             'Germany':{'gim': , 'steel':, 'semi':, 'car':}},
     'China': {'Korea': {'gim':28052,'steel':1803944, 'semi':17758308, 'car':1212067},
@@ -18,12 +18,12 @@ trade_flows = {#단위는 천 달러, Reporter별로 데이터가 다른 경우,
               'Germany':{'gim':23529, 'steel':582, 'semi':1636760, 'car':1833607}},
     'Japan': {'Korea': {'gim': 1329,'steel':2055349, 'semi':1921372, 'car':296440},
               'USA': {'gim':,'steel':, 'semi':, 'car':},
-              'China': {'gim': 1459, 'steel':777891, 'semi':6882555, 'car':6714475},
-              'Germany':{'gim':738, 'steel':12493, 'semi':370643, 'car':2518119}},
-    'Germany': {'Korea': {'gim': 125,'steel':681, 'semi':628437, 'car':6468871},
+              'China': {'gim':, 'steel':777891, 'semi':6882555, 'car':6714475},
+              'Germany':{'gim':, 'steel':12493, 'semi':370643, 'car':2518119}},
+    'Germany': {'Korea': {'gim':,'steel':681, 'semi':628437, 'car':6468871},
                 'USA': {'gim':,'steel':, 'semi':, 'car':},
-              'Japan': {'gim':110, 'steel':40, 'semi':434221, 'car':4282380},
-              'China':{'gim': 122, 'steel':5201, 'semi':1436904, 'car':16512164}}
+              'Japan': {'gim':, 'steel':40, 'semi':434221, 'car':4282380},
+              'China':{'gim':, 'steel':5201, 'semi':1436904, 'car':16512164}}
     
 }
 
