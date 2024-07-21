@@ -124,14 +124,13 @@ alpha = {i: {j: {industry: 0 for industry in industries} for j in countries} for
 gamma = {i: {j: {industry: 0 for industry in industries} for j in countries} for i in countries}
 
 
-#계산가능
-pi_hat = {country: {industry: np.random.rand() for industry in industries} for country in countries}
-tau_hat = {i: {j: {industry: np.random.rand() + 1 for industry in industries} for j in countries} for i in countries}
-t_hat = {i: {j: {industry: np.random.rand() + 1 for industry in industries} for j in countries} for i in countries}
+# optimum tariff only has one game. The initial value becomes 1
+pi_hat = {country: {industry: 1 for industry in industries} for country in countries}
+tau_hat = {i: {j: {industry: 1 for industry in industries} for j in countries} for i in countries}
+t_hat = {i: {j: {industry: 1 for industry in industries} for j in countries} for i in countries}
 
-#원자료 80%
 # w_hat = {country: 1 for country in countries}
-w_hat = {'Korea':16.64, 'USA':33.7, 'China':6.21, 'Japan':12.33, 'Germany':25.34}
+w = {'Korea':16.64, 'USA':33.7, 'China':6.21, 'Japan':12.33, 'Germany':25.34}
 
 
 T = {
@@ -259,14 +258,6 @@ def wL(j):
 
     return x2(j) - term2 - term3
 
-# def x2_hat(j):
-#     sum = 0
-#     for s in industries:
-#         for i in countries:
-#             if i != j:
-#                 sum += x[j][i][s]
-#     return sum  
-
 def complicated(j):
     total = 0
     for i in countries:
@@ -281,7 +272,7 @@ def term3(j):
     for s in industries:
         for i in countries:
             if i != j:
-                total += (pi[j][s] / x2(j) * pi_hat[j][s]) * alpha[j][i][s] * (tau_hat[j][i][s] ** -sigma[s]) * (w_hat[i] ** (1 - sigma[s])) * (eq_12(i, s) ** (sigma[s] - 1))
+                total += (pi[j][s] / x2(j) * pi_hat[j][s]) * alpha[j][i][s] * (tau_hat[j][i][s] ** -sigma[s]) * (w[i] ** (1 - sigma[s])) * (eq_12(i, s) ** (sigma[s] - 1))
     return total
 
 def eq_13(j):
@@ -302,7 +293,7 @@ def eq_10(i, s):
     for j in countries:
         if i != j:
             total += (alpha[i][j][s] * (tau_hat[i][j][s] ** -sigma[s]) * 
-                    (w_hat[i] ** (1 - sigma[s])) * (eq_12(j, s) ** (sigma[s] - 1)) * eq_13(j))
+                    (w[i] ** (1 - sigma[s])) * (eq_12(j, s) ** (sigma[s] - 1)) * eq_13(j))
     return total - 1  # Constraint to be equal to 1
 
 # Constraints as a list for country j
