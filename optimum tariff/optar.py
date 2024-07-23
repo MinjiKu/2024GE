@@ -19,7 +19,16 @@ num_industries = len(industries)
 
 # Initialize dictionaries with varied values
 pol_econ = {country: {industry: np.random.rand() for industry in industries} for country in countries}
-x = {country: {industry: np.random.rand() for industry in industries} for country in countries}
+# x = {country: {industry: np.random.rand() for industry in industries} for country in countries}
+
+x = { #우선 김은 임의로 100으로 채움
+         #단위는 billion USD
+    'Korea':{'gim':100, 'steel':65.85, 'semi':19.8, 'car':188.856},
+    'USA': {'gim':100, 'steel':4.14, 'semi':80.5, 'car':768.0},
+    'China': {'gim':100, 'steel':421.18, 'semi':193.6, 'car':772},
+    'Japan':{'gim':100, 'steel':58.92, 'semi':51.9, 'car':476.784},
+    'Germany':{'gim':100, 'steel':44.50, 'semi':41.2, 'car': 614.313}
+}
 
 # used when calculating welfare
 p_is = {
