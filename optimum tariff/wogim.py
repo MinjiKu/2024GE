@@ -373,7 +373,12 @@ for i in countries:
                     idx += 1
 
 
+
     
     print(f"Optimal tariffs for {i} as the home country:")
-    print(pd.DataFrame(optimal_taus))
+    df = pd.DataFrame(optimal_taus)
+    print(df)
     print("\n")
+    df.to_csv(f'/Users/minjiku/Desktop/2024GE학술제/{i}_optimal_tariffs.csv')
+
+
