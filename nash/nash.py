@@ -409,11 +409,38 @@ def calculate_optimal_tariffs(home_country, countries, industries, sigma, x, pol
     
     return optimal_tariffs
 
+# def calculate_nash_tariffs(countries, industries, sigma, x, pol_econ, tau, t, P_j, p_is):
+#     nash_tau = tau.copy()
+    
+#     max_iterations = 100
+#     convergence_threshold = 0.01
+    
+#     for iteration in range(max_iterations):
+#         old_nash_tau = nash_tau.copy()
+        
+#         for country in countries:
+#             optimal_tariffs = calculate_optimal_tariffs(country, countries, industries, sigma, x, pol_econ, nash_tau, t, P_j, p_is)
+            
+#             for partner in countries:
+#                 if partner != country:
+#                     for industry in industries:
+#                         nash_tau[country][partner][industry] = optimal_tariffs[partner][industry]
+        
+#         # Check for convergence
+#         if all(np.abs(nash_tau[i][j][s] - old_nash_tau[i][j][s]) < convergence_threshold 
+#                for i in countries for j in countries for s in industries if i != j):
+#             print(f"Converged after {iteration + 1} iterations")
+#             break
+#     else:
+#         print(f"Did not converge after {max_iterations} iterations")
+    
+#     return nash_tau
+
 def calculate_nash_tariffs(countries, industries, sigma, x, pol_econ, tau, t, P_j, p_is):
     nash_tau = tau.copy()
     
-    max_iterations = 100
-    convergence_threshold = 0.01
+    max_iterations = 1000  # Increased from 100 to allow for more iterations
+    convergence_threshold = 1e-10  # Updated from 0.01 to 1e-10
     
     for iteration in range(max_iterations):
         old_nash_tau = nash_tau.copy()
@@ -427,12 +454,14 @@ def calculate_nash_tariffs(countries, industries, sigma, x, pol_econ, tau, t, P_
                         nash_tau[country][partner][industry] = optimal_tariffs[partner][industry]
         
         # Check for convergence
-        if all(np.abs(nash_tau[i][j][s] - old_nash_tau[i][j][s]) < convergence_threshold 
-               for i in countries for j in countries for s in industries if i != j):
-            print(f"Converged after {iteration + 1} iterations")
+        max_change = max(abs(nash_tau[i][j][s] - old_nash_tau[i][j][s])
+                         for i in countries for j in countries for s in industries if i != j)
+        
+        if max_change < convergence_threshold:
+            print(f"Converged after {iteration + 1} iterations with max change of {max_change:.2e}")
             break
     else:
-        print(f"Did not converge after {max_iterations} iterations")
+        print(f"Did not converge after {max_iterations} iterations. Max change: {max_change:.2e}")
     
     return nash_tau
 
