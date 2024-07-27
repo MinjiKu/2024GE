@@ -409,11 +409,12 @@ def calculate_optimal_tariffs(home_country, countries, industries, sigma, x, pol
     
     return optimal_tariffs
 
+
 # def calculate_nash_tariffs(countries, industries, sigma, x, pol_econ, tau, t, P_j, p_is):
 #     nash_tau = tau.copy()
     
-#     max_iterations = 100
-#     convergence_threshold = 0.01
+#     max_iterations = 1000  # Increased from 100 to allow for more iterations
+#     convergence_threshold = 1e-10  # Updated from 0.01 to 1e-10
     
 #     for iteration in range(max_iterations):
 #         old_nash_tau = nash_tau.copy()
@@ -427,20 +428,42 @@ def calculate_optimal_tariffs(home_country, countries, industries, sigma, x, pol
 #                         nash_tau[country][partner][industry] = optimal_tariffs[partner][industry]
         
 #         # Check for convergence
-#         if all(np.abs(nash_tau[i][j][s] - old_nash_tau[i][j][s]) < convergence_threshold 
-#                for i in countries for j in countries for s in industries if i != j):
-#             print(f"Converged after {iteration + 1} iterations")
+#         max_change = max(abs(nash_tau[i][j][s] - old_nash_tau[i][j][s])
+#                          for i in countries for j in countries for s in industries if i != j)
+        
+#         if max_change < convergence_threshold:
+#             print(f"Converged after {iteration + 1} iterations with max change of {max_change:.2e}")
 #             break
 #     else:
-#         print(f"Did not converge after {max_iterations} iterations")
+#         print(f"Did not converge after {max_iterations} iterations. Max change: {max_change:.2e}")
     
 #     return nash_tau
 
+# # Calculate Nash equilibrium tariffs
+# nash_tariffs = calculate_nash_tariffs(countries, industries, sigma, x, pol_econ, tau, t, P_j, p_is)
+
+# # Print results
+# print("Nash equilibrium tariffs:")
+# for country in countries:
+#     print(f"\n{country}:")
+#     for partner in countries:
+#         if partner != country:
+#             print(f"  {partner}:")
+#             for industry in industries:
+#                 print(f"    {industry}: {nash_tariffs[country][partner][industry]:.2f}")
+
+# # Calculate welfare changes
+# for country in countries:
+#     initial_welfare = calculate_welfare(country, tau, countries, industries, sigma, x, pol_econ, t, P_j, p_is)
+#     nash_welfare = calculate_welfare(country, nash_tariffs, countries, industries, sigma, x, pol_econ, t, P_j, p_is)
+#     welfare_change = (nash_welfare - initial_welfare) / initial_welfare * 100
+#     print(f"\n{country} welfare change: {welfare_change:.2f}%")
+
 def calculate_nash_tariffs(countries, industries, sigma, x, pol_econ, tau, t, P_j, p_is):
-    nash_tau = tau.copy()
+    nash_tau = tau.copy()  # Start with factual tariffs
     
-    max_iterations = 1000  # Increased from 100 to allow for more iterations
-    convergence_threshold = 1e-10  # Updated from 0.01 to 1e-10
+    max_iterations = 1000
+    convergence_threshold = 1e-10
     
     for iteration in range(max_iterations):
         old_nash_tau = nash_tau.copy()
@@ -448,6 +471,7 @@ def calculate_nash_tariffs(countries, industries, sigma, x, pol_econ, tau, t, P_
         for country in countries:
             optimal_tariffs = calculate_optimal_tariffs(country, countries, industries, sigma, x, pol_econ, nash_tau, t, P_j, p_is)
             
+            # Update Nash tariffs for this country immediately
             for partner in countries:
                 if partner != country:
                     for industry in industries:
@@ -466,7 +490,8 @@ def calculate_nash_tariffs(countries, industries, sigma, x, pol_econ, tau, t, P_
     return nash_tau
 
 # Calculate Nash equilibrium tariffs
-nash_tariffs = calculate_nash_tariffs(countries, industries, sigma, x, pol_econ, tau, t, P_j, p_is)
+initial_tau = tau.copy()  # Save the initial (factual) tariffs
+nash_tariffs = calculate_nash_tariffs(countries, industries, sigma, x, pol_econ, initial_tau, t, P_j, p_is)
 
 # Print results
 print("Nash equilibrium tariffs:")
@@ -476,11 +501,11 @@ for country in countries:
         if partner != country:
             print(f"  {partner}:")
             for industry in industries:
-                print(f"    {industry}: {nash_tariffs[country][partner][industry]:.2f}")
+                print(f"    {industry}: {nash_tariffs[country][partner][industry]:.4f}")
 
 # Calculate welfare changes
 for country in countries:
-    initial_welfare = calculate_welfare(country, tau, countries, industries, sigma, x, pol_econ, t, P_j, p_is)
+    initial_welfare = calculate_welfare(country, initial_tau, countries, industries, sigma, x, pol_econ, t, P_j, p_is)
     nash_welfare = calculate_welfare(country, nash_tariffs, countries, industries, sigma, x, pol_econ, t, P_j, p_is)
     welfare_change = (nash_welfare - initial_welfare) / initial_welfare * 100
     print(f"\n{country} welfare change: {welfare_change:.2f}%")
