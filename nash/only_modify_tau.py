@@ -357,7 +357,7 @@ def constraints(tau_js, j):
 
 
 def calculate_optimum_tariffs():
-    global tau, t  # We'll modify both the global tau and t variables
+    global tau  # We'll modify the global tau variable
     optimal_taus = {i: {j: {industry: 0 for industry in industries} for j in countries if j != i} for i in countries}
     
     for i in countries:
@@ -381,30 +381,21 @@ for iteration in range(100):
     print(f"Iteration {iteration + 1}")
     new_taus = calculate_optimum_tariffs()
     
-    # Update tau with new values and adjust t accordingly
+    # Update tau with new values
     for i in countries:
         for j in countries:
             if j != i:
                 for industry in industries:
                     tau[i][j][industry] = new_taus[i][j][industry]
-                    # Update t based on tau
-                    new_t = tau[i][j][industry] - 1
-                    t[i][j][industry] = max(new_t, 1e-10)  # Ensure t is not below 1e-10
     
     # Recalculate gamma, pi, and alpha with new tau values
     fill_gamma()
     fill_pi()
     fill_alpha()
 
-# Print the final Nash tariffs and corresponding t values
-print("Nash Tariffs (tau):")
+# Print the final Nash tariffs
+print("Nash Tariffs:")
 for i in countries:
     print(f"\nTariffs for {i} as the home country:")
-    df_tau = pd.DataFrame({j: {s: tau[i][j][s] for s in industries} for j in countries if j != i})
-    print(df_tau)
-
-print("\nCorresponding t values:")
-for i in countries:
-    print(f"\nt values for {i} as the home country:")
-    df_t = pd.DataFrame({j: {s: t[i][j][s] for s in industries} for j in countries if j != i})
-    print(df_t)
+    df = pd.DataFrame({j: {s: tau[i][j][s] for s in industries} for j in countries if j != i})
+    print(df)
