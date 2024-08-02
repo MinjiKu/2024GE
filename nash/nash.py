@@ -174,6 +174,34 @@ T = {
             }
     }
 
+tau_js = {
+                "China": {
+                    "steel": 1.03725,
+                    "semi": 1.00250,
+                    "car": 1.07175
+                },
+                "Korea": {
+                    "steel": 1.000,
+                    "semi": 1.000,
+                    "car": 1.031
+                },
+                "Japan": {
+                    "steel": 1.000,
+                    "semi": 1.000,
+                    "car": 1.000
+                },
+                "USA": {
+                    "steel": 1.000000,
+                    "semi": 1.062500,
+                    "car": 1.067475
+                },
+                "Germany": {
+                    "steel": 1.08975,
+                    "semi": 1.00000,
+                    "car": 1.01500
+                }
+            }
+
 gamma_denom = {j: {industry: 0 for industry in industries} for j in countries}
 
 def fill_gamma_denom():
@@ -364,8 +392,18 @@ def calculate_optimum_tariffs():
         for j in countries:
             if j == i:
                 continue
-            initial_tau_js = np.random.rand(num_industries * (num_countries - 1)) * 0.5 + 1.0
-            result = minimize(gov_obj, initial_tau_js, args=(j,), constraints=constraints(initial_tau_js, j))
+            tau_js = np.random.rand(num_industries * (num_countries - 1)) * 0.5 + 1.0
+
+            # # Flatten the tau_js dictionary into a list
+            # flattened_tau_js = [value for country in tau_js.values() for value in country.values()]
+
+            # # Convert to numpy array
+            # tau_js_array = np.array(flattened_tau_js)
+
+            # tau_js = tau_js_array
+
+
+            result = minimize(gov_obj, tau_js, args=(j,), constraints=constraints(tau_js, j))
             
             for k, industry in enumerate(industries):
                 idx = 0
