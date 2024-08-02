@@ -291,6 +291,7 @@ def term3(j):
                 total += (pi[j][s] / x2(j) * pi_hat[j][s]) * alpha[j][i][s] * (tau_hat[j][i][s] ** -sigma[s]) * (w[i] ** (1 - sigma[s])) * (eq_12(i, s) ** (sigma[s] - 1))
     return total
 
+
 def eq_13(j):
     epsilon = 1e-10
     term1 = wL(j) / (x2(j) + epsilon)
@@ -313,13 +314,15 @@ def eq_10(i, s):
                     (w[i] ** (1 - sigma[s])) * (eq_12(j, s) ** (sigma[s] - 1)) * eq_13(j))
     return total - 1  # Constraint to be equal to 1
 
+
 def constraints(tau_js, j):
     tau_copy = {i: {industry: 0 for industry in industries} for i in countries if i != j}
     idx = 0
     for industry in industries:
         for country in countries:
             if country != j:
-                tau_copy[country][industry] = tau_js[idx]
+                # tau_copy[country][industry] = tau_js[idx]
+                tau_copy[country][industry] = tau_js
                 idx += 1
     cons = []
     for s in industries:
@@ -330,60 +333,67 @@ def constraints(tau_js, j):
             cons.append({'type': 'eq', 'fun': lambda tau_js, i=i, s=s: eq_10(i, s)})
     return cons
 
-def flatten_optimal_taus(optimal_taus):
-    flat_list = []
-    for i in countries:
-        for j in countries:
-            if j == i:
-                continue
-            for industry in industries:
-                flat_list.append(optimal_taus[i][j][industry])
-    return np.array(flat_list)
 
+# Function to generate tariff matrix
+def generate_tariff_matrix():
+    # Create an array of tariffs (excluding the home country)
+    # Tariffs for each industry (rows) and country (columns, excluding the home country)
+    tariff_values = np.random.rand(num_industries, num_countries - 1) * 0.5 + 1.0
+    return tariff_values
 
-initial_tau_js = np.random.rand(num_industries * (num_countries - 1)) * 0.5 + 1.0
-# initial_tau_js1 = np.random.rand(num_industries * (num_countries - 1)) * 0.5 + 1.0
-# initial_tau_js2 = np.random.rand(num_industries * (num_countries - 1)) * 0.5 + 1.0
-# initial_tau_js3 = np.random.rand(num_industries * (num_countries - 1)) * 0.5 + 1.0
+# Generate an array of 5 tariff matrices
+tariff_matrices = [generate_tariff_matrix() for _ in range(5)]
 
-def calculate_optimum_tariffs():
-    global tau, t, initial_tau_js;  # We'll modify both the global tau and t variables
-    optimal_taus = {i: {j: {industry: 0 for industry in industries} for j in countries if j != i} for i in countries}
+def flatten(matrix):
+    return [item for sublist in matrix for item in sublist]
+   
+flat_matrices = [flatten(tariff_matrices[i]) for i in range(5)]
+
+def calculate_optimum_tariffs(exporter_name):
+    global tau, t, tariff_matrices;  # We'll modify both the global tau and t variables
+    # optimal_taus = {i: {j: {industry: 0 for industry in industries} for j in countries if j != i} for i in countries}
+    optimal_taus = {j: {industry: 0 for industry in industries} for j in countries if j != exporter_name}
     
-    for i in countries:
-        for j in countries:
-            if j == i:
-                continue
-           
-            result = minimize(gov_obj, initial_tau_js, args=(j,), constraints=constraints(initial_tau_js, j))
-            # result1 = minimize(gov_obj, initial_tau_js1, args=(j,), constraints=constraints(initial_tau_js1, j))
-            # result2 = minimize(gov_obj, initial_tau_js2, args=(j,), constraints=constraints(initial_tau_js2, j))
-            # result3 = minimize(gov_obj, initial_tau_js3, args=(j,), constraints=constraints(initial_tau_js3, j))
+    for j, importer in enumerate(countries):
+        if importer == exporter_name:
+            continue
+        
+        # result = minimize(gov_obj, tariff_matrices[j], args=(j,), constraints=constraints(initial_tau_js, j))  
+        # print(tariff_matrices[0])
+        # flat_tar = flatten(tariff_matrices[j])
+        # print(flat_tar)
+        
+        idx = 0
 
-
-            for k, industry in enumerate(industries):
-                idx = 0
-                for country in countries:
-                    if country != i:
-                        optimal_taus[i][country][industry] = result.x[k * (num_countries - 1) + idx]
-                        idx += 1
+        for k, industry in enumerate(industries):
+            
+            result = minimize(gov_obj, flat_matrices[j], args=(importer,), constraints=constraints(tariff_matrices[j], importer))
+            # optimal_taus[importer][industry] = result.x[k * (num_countries - 1) + idx]
+            optimal_taus[importer][industry] = flat_matrices[j][k * (num_countries - 1)+ idx]
+            idx += 1
     
-    flattened = flatten_optimal_taus(optimal_taus)
-    initial_tau_js = flattened
     return optimal_taus
+
+
 
 # Perform 100 iterations
 for iteration in range(100):
     print(f"Iteration {iteration + 1}")
-    new_taus = calculate_optimum_tariffs()
+    
+    new_taus = {i: {j: {industry: 0 for industry in industries} for j in countries if j != i} for i in countries}
+    global tariff_matricess
+    tariff_matrices = [generate_tariff_matrix() for _ in range(5)]
+    for k, country in enumerate(countries):
+        new_taus[country] = calculate_optimum_tariffs(country)
+    
 
     # Print the final Nash tariffs and corresponding t values
     print("Nash Tariffs (tau):")
     for i in countries:
         print(f"\nTariffs for {i} as the home country:")
-        df_tau = pd.DataFrame({j: {s: tau[i][j][s] for s in industries} for j in countries if j != i})
+        df_tau = pd.DataFrame({j: {s: new_taus[i][j][s] for s in industries} for j in countries if j != i})
         print(df_tau)
-    
+
     # Update tau with new values and adjust t accordingly
     for i in countries:
         for j in countries:
