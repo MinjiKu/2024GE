@@ -188,7 +188,6 @@ L_js = {
 
 L_j = {'Korea':29.5, 'USA':171, 'China':780, 'Japan':69.3, 'Germany':44.4} #million 
 
-
 gamma_denom = {j: {industry: 0 for industry in industries} for j in countries}
 
 def fill_gamma_denom():
@@ -211,6 +210,12 @@ def fill_gamma():
                 
 
 fill_gamma()
+print("gamma:")
+print(gamma)
+print("\n")
+print("gamma_denom: ")
+print(gamma_denom)
+print("\n")
 
 def fill_pi():
     for j in countries:
@@ -387,58 +392,6 @@ def update_hats(tau, t, pi): #갱신된 값이 인자로 들어감
         for s in industries:
             pi_hat[j][s] = abs(pi[j][s] / factual_pi[j][s])
 
-# # Iteratively optimize tariffs
-# num_iterations = 10
-# epsilon = 1e-10  # Small constant to replace zeros
-
-# for iteration in range(num_iterations):
-#     print(f"Iteration {iteration + 1}")
-#     for i in countries:
-#         optimal_taus = {j: {industry: 0 for industry in industries} for j in countries if j != i}
-#         for j in countries:
-#             if j == i:
-#                 continue
-
-#             # Use the optimal tariffs from the previous iteration as the initial guess
-#             if iteration == 0:
-#                 initial_tau_js = np.array([factual_tau[i][j][industry] for industry in industries for j in countries if j != i])
-#             else:
-#                 initial_tau_js = np.array([optimal_taus[j][industry] for industry in industries for j in countries if j != i])
-
-#             # Ensure initial_tau_js has no zero values
-#             initial_tau_js = np.where(initial_tau_js == 0, epsilon, initial_tau_js)
-
-#             result = minimize(gov_obj, initial_tau_js, args=(j,), constraints=constraints(initial_tau_js, j))
-#             for k, industry in enumerate(industries):
-#                 idx = 0
-#                 for country in countries:
-#                     if country != i:
-#                         # Calculate the correct index in result.x for the current industry and country
-#                         optimal_value = result.x[k * (num_countries - 1) + idx]
-#                         # Replace zero values with epsilon
-#                         if optimal_value == 0:
-#                             optimal_value = epsilon
-#                         optimal_taus[country][industry] = optimal_value
-#                         idx += 1
-        
-#         print(f"Optimal tariffs for {i} as the home country:")
-#         df = pd.DataFrame(optimal_taus)
-#         print(df)
-#         print("\n")
-
-#         # Update tau with the new optimal tariffs for the next iteration
-#         for j in countries:
-#             if j != i:
-#                 for industry in industries:
-#                     tau[i][j][industry] = optimal_taus[j][industry]
-#                     t[i][j][industry] = max(tau[i][j][industry] - 1, epsilon)
-
-#     # After updating optimal tau, t -> update alpha, gamma, and hats
-#     fill_gamma()
-#     fill_alpha()
-#     fill_pi
-#     update_hats(tau, t, pi) #여기에 들어가는 것은 factual tau, t, pi 값
-
 
 def calculate_optimum_tariffs(exporter_name):
     global tau, t, tariff_matrices;  # We'll modify both the global tau and t variables
@@ -461,6 +414,9 @@ def calculate_optimum_tariffs(exporter_name):
             result = minimize(gov_obj, flat_matrices[j], args=(importer,), constraints=constraints(tariff_matrices[j], importer))
             # optimal_taus[importer][industry] = result.x[k * (num_countries - 1) + idx]
             optimal_taus[importer][industry] = flat_matrices[j][k * (num_countries - 1)+ idx]
+            tau[exporter_name] = optimal_taus
+            fill_gamma()
+            # print(gamma_denom)
             idx += 1
     
     return optimal_taus
@@ -496,9 +452,9 @@ for iteration in range(100):
                     t[i][j][industry] = max(new_t, 1e-10)  # Ensure t is not below 1e-10
     
     # Recalculate gamma, pi, and alpha with new tau values
-    fill_gamma()
-    fill_pi()
-    fill_alpha()
+    # fill_gamma()
+    # fill_pi()
+    # fill_alpha()
     update_hats(tau, t, pi)
 
 # Print the final Nash tariffs and corresponding t values
