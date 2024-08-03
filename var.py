@@ -1,3 +1,8 @@
+# to check if actual tariffs get calculated
+import numpy as np
+from scipy.optimize import minimize
+import pandas as pd
+
 # Define countries and industries
 countries = ['China', 'Korea', 'Japan', 'USA', 'Germany']
 industries = ['steel', 'semi', 'car']
@@ -119,3 +124,124 @@ t = {'Korea': {'USA': {'steel': 1e-10, 'semi': 1e-10, 'car': 1e-10},
                 'USA': {'steel': 1e-10, 'semi': 1e-10, 'car': 0.0212}, 
                 'Japan': {'steel': 1e-10, 'semi': 1e-10, 'car': 1e-10}, 
                 'China': {'steel': 0.05, 'semi': 1e-10, 'car': 0.085}}}
+
+#계산함
+pi = {country: {industry: 0 for industry in industries} for country in countries}
+# Initialize gamma and alpha
+gamma = {i: {j: {industry: 0 for industry in industries} for j in countries if j != i} for i in countries}
+alpha = {i: {j: {industry: 0 for industry in industries} for j in countries if j != i} for i in countries}
+
+#계산이 거듭함에도 factual_들은 원래 값을 보존
+factual_tau = tau.copy()
+factual_t = t.copy()
+
+# optimum tariff only has one game. The initial value becomes 1
+pi_hat = {country: {industry: 1 for industry in industries} for country in countries}
+tau_hat = {i: {j: {industry: 1 for industry in industries} for j in countries if j != i} for i in countries}
+t_hat = {i: {j: {industry: 1 for industry in industries} for j in countries if j != i} for i in countries}
+
+#뒤에서 계산해서 채워야 함
+P_hat = {j: {s: 1.0 for s in industries} for j in countries}
+X_hat = {j: 1.0 for j in countries} 
+
+# w_hat = {country: 1 for country in countries}
+w = {'Korea':16.64, 'USA':33.7, 'China':6.21, 'Japan':12.33, 'Germany':25.34}
+
+
+T = {
+    'China': {'Germany': {'gim': 38120.0, 'steel': 582083.0, 'semi': 119516177.0, 'car': 1833609424.0}, 
+              'Japan': {'gim': 20212670.0, 'steel': 83818503.0, 'semi': 535757854.0, 'car': 676593127.0}, 
+              'Korea': {'gim': 248805.0, 'steel': 1803944738.0, 'semi': 15219366037.0, 'car': 1212097485.0}, 
+              'USA': {'gim': 2316260.0, 'steel': 1358591.0, 'semi': 341810421.0, 'car': 2638478640.0}
+            }, 
+    'Germany': {'China': {'gim': 5240.909, 'steel': 5201023.164, 'semi': 19331662.139, 'car': 16512164176.907999}, 
+                'Japan': {'gim': 110, 'steel': 40160.479, 'semi': 693421.891, 'car': 4282380533.395}, 
+                'Korea': {'gim': 2901.044, 'steel': 681557.131, 'semi': 3842475.101, 'car': 6468871825.364}, 
+                'USA': {'gim': 432.507, 'steel': 51998280.381, 'semi': 12024057.385, 'car': 28218169963.792}
+            }, 
+    'Japan': {'China': {'gim': 1022148.922, 'steel': 777891701.735, 'semi': 4241031727.742, 'car': 6714475489.161}, 
+              'Germany': {'gim': 206532.406, 'steel': 12493288.74, 'semi': 40437523.308, 'car': 2518119540.9589996}, 
+              'Korea': {'gim': 53875.234, 'steel': 1873216558.145, 'semi': 20384960.593, 'car': 746276605.623}, 
+              'USA': {'gim': 8536153.179, 'steel': 141884446.045, 'semi': 57715066.618, 'car': 43064344998.029}
+            }, 
+    'USA': {'China': {'gim': 608.0, 'steel': 487349.0,'semi': 41034340.0, 'car': 6554910660.0}, 
+            'Germany': {'gim': 861724.0, 'steel': 75461.0, 'semi': 18155007.0, 'car': 9157689622.0}, 
+            'Japan': {'gim': 439247.0, 'steel': 1199499.0, 'semi': 14758843.0, 'car': 1277318495.0}, 
+            'Korea': {'gim': 169675.0, 'steel': 180376.0,'semi': 15309944.0, 'car': 2740915359.0}
+            }, 
+    'Korea': {'China': {'gim': 48062453.0, 'steel': 543488181.0,  'semi': 34451077419.0, 'car': 313316807.0}, 
+              'Germany': {'gim': 1055190.583, 'steel': 52080498.965, 'semi': 156173609.446, 'car': 11664726.954}, 
+              'Japan': {'gim': 104775627.791, 'steel': 921335767.82, 'semi': 419536125.294, 'car': 495404.448}, 
+              'USA': {'gim': 33963781.0, 'steel': 581315367.0, 'semi': 236493837.0, 'car': 883492635.0}
+            }
+}
+
+L_js = {
+    'Korea':{'steel':1.13, 'semi':0.34, 'car':3.25},
+    'USA': {'steel':0.03, 'semi':0.50, 'car':4.80},
+    'China': {'steel':18.46, 'semi':8.49, 'car':33.84},
+    'Japan':{'steel':0.97, 'semi':0.85, 'car':7.84},
+    'Germany':{'steel':0.44, 'semi':0.41, 'car': 6.12}
+}
+
+L_j = {'Korea':29.5, 'USA':171, 'China':780, 'Japan':69.3, 'Germany':44.4} #million 
+
+gamma_denom = {j: {industry: 0 for industry in industries} for j in countries}
+
+def fill_gamma_denom():
+    for j in countries:
+        for s in industries:
+            # gamma_denom[j][s] = 0
+            for m in countries:
+                if m != j:
+                    gamma_denom[j][s] += tau[m][j][s] * T[m][j][s]
+                
+
+def fill_gamma():
+    fill_gamma_denom()
+    for i in countries:
+        for j in countries:
+            for s in industries:
+                if i != j:
+                    gamma_value = tau[i][j][s] * T[i][j][s] / gamma_denom[j][s]
+                    gamma[i][j][s] = max(gamma_value, epsilon)
+                
+
+fill_gamma()
+# print("gamma:")
+# print(gamma)
+# print("\n")
+# print("gamma_denom: ")
+# print(gamma_denom)
+# print("\n")
+
+def fill_pi():
+    for j in countries:
+        for s in industries:
+            for i in countries:
+                if i != j:
+                    pi_value = 1 / sigma[s] * T[i][j][s]
+                    pi[j][s] += max(pi_value, epsilon)
+fill_pi()
+factual_pi = pi.copy() #factual pi 보존
+
+alpha_denom = {j: {industry: 0 for industry in industries} for j in countries}
+
+def fill_alpha_denom():
+    for i in countries:
+        for s in industries:
+            for n in countries:
+                if i != n:
+                    alpha_denom[i][s] += T[i][n][s]            
+
+def fill_alpha():
+    fill_alpha_denom()
+    for i in countries:
+        for j in countries:
+            if i == j:
+                continue  # Skip the case where i == j
+            for s in industries:
+                alpha_value = T[i][j][s] / alpha_denom[i][s]
+                alpha[i][j][s] = max(alpha_value, epsilon)  # Ensure no zero values
+
+fill_alpha()
