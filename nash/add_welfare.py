@@ -54,7 +54,7 @@ def eq_12(j, s):
         if i != j:
             total += (var.gamma[i][j][s] * (var.tau_hat[i][j][s] ** (1 - var.sigma[s]))) ** (1 / (1 - var.sigma[s]))
     var.P_hat[j][s] = total
-    return total
+    return var.P_hat[j][s] - total
 
 # Constraint 2 helper functions
 def x2(j):
@@ -121,32 +121,21 @@ def eq_10(i, s):
     
     return total - var.pi_hat[i][s]
 
-
-# def constraints(tau_js, j):
-#     tau_copy = {i: {industry: 0 for industry in var.industries} for i in var.countries if i != j}
-#     idx = 0
-#     for industry in var.industries:
-#         for country in var.countries:
-#             if country != j:
-#                 tau_copy[country][industry] = tau_js
-#                 idx += 1
-#     cons = []
-#     #for s in var.industries:
-#         #cons.append({'type': 'eq', 'fun': lambda tau_js, j=j, s=s: eq_12(j, s)})
-#     cons.append({'type': 'eq', 'fun': lambda tau_js, j=j: eq_13(j)})
-#     for i in var.countries:
-#         for s in var.industries:
-#             cons.append({'type': 'eq', 'fun': lambda tau_js, i=i, s=s: eq_10(i, s)})
-#     return cons
 def constraints(tau_js, j):
     tau_copy = {i: {industry: 0 for industry in var.industries} for i in var.countries if i != j}
     idx = 0
     for industry in var.industries:
         for country in var.countries:
             if country != j:
+                if idx >= len(tau_js):  # Check if index is within bounds
+                    print(f"IndexError: idx={idx} out of bounds for tau_js with length {len(tau_js)}")
+                    return []
                 tau_copy[country][industry] = tau_js[idx]
                 idx += 1
-                
+
+    # Print for debugging
+    print(f"tau_copy: {tau_copy}")            
+    
     cons = []
     
     # Constraint 1: eq_12
@@ -298,7 +287,7 @@ temp_t = var.t.copy()
 temp_T = var.T.copy()
 
 # Perform 100 iterations
-for iteration in range(100):
+for iteration in range(1):
     print(f"Iteration {iteration + 1}") 
     
     new_taus = {i: {j: {industry: 0 for industry in var.industries} for j in var.countries if j != i} for i in var.countries}
