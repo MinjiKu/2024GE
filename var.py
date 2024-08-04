@@ -68,7 +68,7 @@ P_j = {'Germany':131.8924482,
 
 
 # tau = {i: {j: {industry: np.random.rand() + 1 for industry in industries} for j in countries} for i in countries}
-tau = {
+tau_temp = {
     'China': {
         'Korea': {'gim': 1.18, 'steel': 1, 'semi': 1, 'car': 1.059},
         'Japan': {'gim': 1.4, 'steel': 1, 'semi': 1, 'car': 1},
@@ -101,10 +101,11 @@ tau = {
     }
 }
 
+tau = tau_temp * 100
 
 sigma = {'gim': 3.57, 'steel': 4.0, 'semi': 2.5, 'car': 1.8}
 
-t = {'Korea': {'USA': {'steel': 1e-10, 'semi': 1e-10, 'car': 1e-10}, 
+t_temp = {'Korea': {'USA': {'steel': 1e-10, 'semi': 1e-10, 'car': 1e-10}, 
                'China': {'steel': 0.005, 'semi': 0.01, 'car': 0.04}, 
                'Japan': {'steel': 1e-10, 'semi': 1e-10, 'car': 1e-10}, 
                'Germany': {'steel': 1e-10, 'semi': 1e-10, 'car': 1e-10}}, 
@@ -124,6 +125,8 @@ t = {'Korea': {'USA': {'steel': 1e-10, 'semi': 1e-10, 'car': 1e-10},
                 'USA': {'steel': 1e-10, 'semi': 1e-10, 'car': 0.0212}, 
                 'Japan': {'steel': 1e-10, 'semi': 1e-10, 'car': 1e-10}, 
                 'China': {'steel': 0.05, 'semi': 1e-10, 'car': 0.085}}}
+
+t = t_temp * 100
 
 #계산함
 pi = {country: {industry: 0 for industry in industries} for country in countries}
