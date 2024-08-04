@@ -27,16 +27,29 @@ Determine the condition under which it will gain in one special case
 pip install pandas
 ```
 
-### Moel
+### Model
 
 * 4 industries, 5 countries
-  * Seaweed, steel, car, semiconductor
+  * steel, car, semiconductor (we previously included seaweed, but necessary data are missing in the industry, so we excluded)
   * Korea, USA, China, Japan, Germany
     * Chose industries where Korea has market power
     * Countries that have high trade volumes with Korea within the industries
 
 ### Optimum Tariff Calculation
+calculating optimum tariff using static real datasets from all participating countries' public stats
+* one-shot game
+  
 ### Nash Equilibrium Tariff
-### Cooperative Tariff
-### Welfare
+calculating nash tariff when retaliation exist
+* repeated game
+* participating countries can know the next step of their couterparts
 
+### Cooperative Tariff
+calculating cooperative tariff when increased welfare is distributed evenly to all participating countries
+* repeated game
+* but, participants communicate among themselves
+* Ossa claims that eventually trade environment switch from nash to cooperative due to decreased welfare in nash environment
+
+### Welfare
+Throughout the research, we track the change in welfare in order to compare
+This research aims to find tariff strategy by analyzing welfare changes
