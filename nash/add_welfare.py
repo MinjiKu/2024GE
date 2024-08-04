@@ -134,7 +134,7 @@ def constraints(tau_js, j):
                 idx += 1
 
     # Print for debugging
-    print(f"tau_copy: {tau_copy}")            
+    # print(f"tau_copy: {tau_copy}")            
     
     cons = []
     
@@ -261,15 +261,11 @@ def calculate_optimum_tariffs(exporter_name):
     for j, importer in enumerate(var.countries):
         if importer == exporter_name:
             continue
-        
-        idx = 0
 
         for k, industry in enumerate(var.industries):
-            
-            # result = minimize(gov_obj, flat_matrices[j], args=(importer,), constraints=constraints(tariff_matrices[j], importer))
-            # optimal_taus[importer][industry] = flat_matrices[j][k * (var.num_countries - 1)+ idx]
+            idx = 0
             result = minimize(gov_obj, flat_matrices[j], args=(importer,), constraints=constraints(flat_matrices[j], importer))
-            optimal_taus[importer][industry] = result.x[idx]
+            optimal_taus[importer][industry] = result.x[k * (var.num_industries)+ idx]
             idx += 1
             
             var.tau[exporter_name] = optimal_taus
@@ -287,12 +283,12 @@ temp_t = var.t.copy()
 temp_T = var.T.copy()
 
 # Perform 100 iterations
-for iteration in range(1):
+for iteration in range(10):
     print(f"Iteration {iteration + 1}") 
     
     new_taus = {i: {j: {industry: 0 for industry in var.industries} for j in var.countries if j != i} for i in var.countries}
-    tariff_matrices = [generate_tariff_matrix() for _ in range(5)]
-    flat_matrices = [flatten(tariff_matrices[i]) for i in range(5)]
+    tariff_matrices = [generate_tariff_matrix() for _ in range(len(var.countries))]
+    flat_matrices = [flatten(tariff_matrices[i]) for i in range(len(var.countries))]
     
     for k, country in enumerate(var.countries):
         new_taus[country] = calculate_optimum_tariffs(country)
