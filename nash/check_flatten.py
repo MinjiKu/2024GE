@@ -1,5 +1,6 @@
 import sys
 import os
+import matplotlib.pyplot as plt
 
 # Get the absolute path of the current script's directory
 script_dir = os.path.dirname(os.path.abspath(__file__))
@@ -167,13 +168,10 @@ def update_hats(tau, t, pi): #갱신된 값이 인자로 들어감
             var.pi_hat[j][s] = abs(var.pi[j][s] / factual_pi[j][s])
 
 
-def calculate_optimum_tariffs(exporter, importer):
-    initial_guess = flatten(generate_tariff_matrix())
+def calculate_optimum_tariffs(exporter, importer, initial_guess):
     result = minimize(gov_obj, initial_guess, args=(exporter, importer), constraints=constraints(initial_guess, importer))
     optimal_taus = {industry: result.x[idx] for idx, industry in enumerate(var.industries)}
     return optimal_taus
-
-import matplotlib.pyplot as plt
 
 # Initialize a dictionary to store tariff values for each iteration
 tariff_history = {i: {j: {industry: [] for industry in var.industries} for j in var.countries if j != i} for i in var.countries}
@@ -194,9 +192,10 @@ for iteration in range(100):
     for k, exporter in enumerate(var.countries):
         for importer in var.countries:
             if exporter != importer:
-                optimal_taus_for_importer = calculate_optimum_tariffs(exporter, importer)
+                initial_guess = flatten(new_taus[exporter][importer])
+                optimal_taus_for_pair= calculate_optimum_tariffs(exporter, importer, initial_guess)
                 for industry in var.industries:
-                    new_taus[exporter][importer][industry] = optimal_taus_for_importer[industry]
+                    new_taus[exporter][importer][industry] = optimal_taus_for_pair[industry]
     
     # Update var.tau with new_taus
     for exporter in var.countries:
