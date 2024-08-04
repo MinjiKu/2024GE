@@ -100,8 +100,10 @@ tau_temp = {
         'USA': {'gim': 1, 'steel': 1, 'semi': 1, 'car': 1.0212}
     }
 }
+tau = {country: {partner: {product: value * 100 for product, value in products.items()}
+               for partner, products in partners.items()}
+     for country, partners in tau_temp.items()}
 
-tau = tau_temp * 100
 
 sigma = {'gim': 3.57, 'steel': 4.0, 'semi': 2.5, 'car': 1.8}
 
@@ -126,7 +128,10 @@ t_temp = {'Korea': {'USA': {'steel': 1e-10, 'semi': 1e-10, 'car': 1e-10},
                 'Japan': {'steel': 1e-10, 'semi': 1e-10, 'car': 1e-10}, 
                 'China': {'steel': 0.05, 'semi': 1e-10, 'car': 0.085}}}
 
-t = t_temp * 100
+t = {country: {partner: {product: value * 100 for product, value in products.items()}
+               for partner, products in partners.items()}
+     for country, partners in t_temp.items()}
+
 
 #계산함
 pi = {country: {industry: 0 for industry in industries} for country in countries}
