@@ -122,22 +122,48 @@ def eq_10(i, s):
     return total - var.pi_hat[i][s]
 
 
+# def constraints(tau_js, j):
+#     tau_copy = {i: {industry: 0 for industry in var.industries} for i in var.countries if i != j}
+#     idx = 0
+#     for industry in var.industries:
+#         for country in var.countries:
+#             if country != j:
+#                 tau_copy[country][industry] = tau_js
+#                 idx += 1
+#     cons = []
+#     #for s in var.industries:
+#         #cons.append({'type': 'eq', 'fun': lambda tau_js, j=j, s=s: eq_12(j, s)})
+#     cons.append({'type': 'eq', 'fun': lambda tau_js, j=j: eq_13(j)})
+#     for i in var.countries:
+#         for s in var.industries:
+#             cons.append({'type': 'eq', 'fun': lambda tau_js, i=i, s=s: eq_10(i, s)})
+#     return cons
 def constraints(tau_js, j):
     tau_copy = {i: {industry: 0 for industry in var.industries} for i in var.countries if i != j}
     idx = 0
     for industry in var.industries:
         for country in var.countries:
             if country != j:
-                tau_copy[country][industry] = tau_js
+                tau_copy[country][industry] = tau_js[idx]
                 idx += 1
+                
     cons = []
-    #for s in var.industries:
-        #cons.append({'type': 'eq', 'fun': lambda tau_js, j=j, s=s: eq_12(j, s)})
+    
+    # Constraint 1: eq_12
+    for s in var.industries:
+        cons.append({'type': 'eq', 'fun': lambda tau_js, j=j, s=s: eq_12(j, s)})
+    
+    # Constraint 2: eq_13
     cons.append({'type': 'eq', 'fun': lambda tau_js, j=j: eq_13(j)})
+    
+    # Constraint 3: eq_10 for each country i and industry s
     for i in var.countries:
-        for s in var.industries:
-            cons.append({'type': 'eq', 'fun': lambda tau_js, i=i, s=s: eq_10(i, s)})
+        if i != j:
+            for s in var.industries:
+                cons.append({'type': 'eq', 'fun': lambda tau_js, i=i, s=s: eq_10(i, s)})
+    
     return cons
+
 
 # Function to generate tariff matrix
 def generate_tariff_matrix():
@@ -146,13 +172,16 @@ def generate_tariff_matrix():
     tariff_values = np.random.rand(var.num_industries, var.num_countries - 1) * 0.5 + 1.0
     return tariff_values
 
-# Generate an array of 5 tariff matrices
-tariff_matrices = [generate_tariff_matrix() for _ in range(5)]
-
 def flatten(matrix):
     return [item for sublist in matrix for item in sublist]
-   
+
+# Generate an array of 5 tariff matrices
+tariff_matrices = [generate_tariff_matrix() for _ in range(5)]   
 flat_matrices = [flatten(tariff_matrices[i]) for i in range(5)]
+
+def generate_tariff_matrix():
+    tariff_values = np.random.rand(var.num_industries, var.num_countries - 1) * 0.5 + 1.0
+    return tariff_values
 
 def cal_x_j(country):
     sum = 0
@@ -222,7 +251,8 @@ def welfare_change(T, X, delta_p, p, pi, t, delta_pi, delta_T):
 
 # Update hats function
 def update_hats(tau, t, pi): #갱신된 값이 인자로 들어감
-    global pi_hat, tau_hat, t_hat, factual_tau, factual_pi, factual_t
+    # global pi_hat, tau_hat, t_hat, factual_tau, factual_pi, factual_t
+    global factual_pi
     for i in var.countries:
         for j in var.countries:
             if i != j:
@@ -236,31 +266,28 @@ def update_hats(tau, t, pi): #갱신된 값이 인자로 들어감
 
 def calculate_optimum_tariffs(exporter_name):
     global tau, t, tariff_matrices;  # We'll modify both the global tau and t variables
-    # optimal_taus = {i: {j: {industry: 0 for industry in var.industries} for j in var.countries if j != i} for i in var.countries}
+    
     optimal_taus = {j: {industry: 0 for industry in var.industries} for j in var.countries if j != exporter_name}
     
     for j, importer in enumerate(var.countries):
         if importer == exporter_name:
             continue
         
-        # result = minimize(gov_obj, tariff_matrices[j], args=(j,), constraints=constraints(initial_tau_js, j))  
-        # print(tariff_matrices[0])
-        # flat_tar = flatten(tariff_matrices[j])
-        # print(flat_tar)
-        
         idx = 0
 
         for k, industry in enumerate(var.industries):
             
-            result = minimize(gov_obj, flat_matrices[j], args=(importer,), constraints=constraints(tariff_matrices[j], importer))
-            # optimal_taus[importer][industry] = result.x[k * (num_var.countries - 1) + idx]
-            optimal_taus[importer][industry] = flat_matrices[j][k * (var.num_countries - 1)+ idx]
+            # result = minimize(gov_obj, flat_matrices[j], args=(importer,), constraints=constraints(tariff_matrices[j], importer))
+            # optimal_taus[importer][industry] = flat_matrices[j][k * (var.num_countries - 1)+ idx]
+            result = minimize(gov_obj, flat_matrices[j], args=(importer,), constraints=constraints(flat_matrices[j], importer))
+            optimal_taus[importer][industry] = result.x[idx]
+            idx += 1
+            
             var.tau[exporter_name] = optimal_taus
             var.fill_gamma()
-            # print(gamma_denom)
-            idx += 1
+            
     
-    welfare_change(var.T, var.x, delta_p, var.p_is, var.pi, var.t, delta_pi, delta_T)
+    # welfare_change(var.T, var.x, delta_p, var.p_is, var.pi, var.t, delta_pi, delta_T)
     return optimal_taus
 
 
@@ -272,17 +299,11 @@ temp_T = var.T.copy()
 
 # Perform 100 iterations
 for iteration in range(100):
-    # Delta 값 계산
-    delta_pi = {country: {industry: var.pi[country][industry] - temp_pi[country][industry] for industry in var.industries} for country in var.countries}
-    delta_p = {i: {j: {industry: var.p_is[i][j][industry] - temp_p[i][j][industry] for industry in var.industries} for j in var.countries if i != j} for i in var.countries}
-    delta_T = {i: {j: {industry: var.T[i][j][industry] - temp_T[i][j][industry] for industry in var.industries} for j in var.countries if i != j} for i in var.countries}
-
-
-    print(f"Iteration {iteration + 1}")
+    print(f"Iteration {iteration + 1}") 
     
     new_taus = {i: {j: {industry: 0 for industry in var.industries} for j in var.countries if j != i} for i in var.countries}
-    #global tariff_matrices
     tariff_matrices = [generate_tariff_matrix() for _ in range(5)]
+    flat_matrices = [flatten(tariff_matrices[i]) for i in range(5)]
     
     for k, country in enumerate(var.countries):
         new_taus[country] = calculate_optimum_tariffs(country)
@@ -294,27 +315,35 @@ for iteration in range(100):
         df_tau = pd.DataFrame({j: {s: new_taus[i][j][s] for s in var.industries} for j in var.countries if j != i})
         print(df_tau)
 
+    temp_t = var.t.copy()
+    temp_pi = var.pi.copy()
+
     # Update tau with new values and adjust t accordingly
     for i in var.countries:
         for j in var.countries:
             if j != i:
                 for industry in var.industries:
                     var.tau[i][j][industry] = new_taus[i][j][industry]
-                    # Update t based on tau
                     new_t = var.tau[i][j][industry] - 1
                     var.t[i][j][industry] = max(new_t, 1e-10)  # Ensure t is not below 1e-10
     
     # Recalculate gamma, var.pi, and alpha with new tau values
     update_hats(var.tau, var.t, var.pi)
     
-    # Update temp variables for next iteration
-    temp_pi = var.pi.copy()
-    temp_p = var.p_is.copy()
-    temp_t = var.t.copy()
+    # Update temp variables for next iteration 
+    temp_p = var.p_is.copy() 
     temp_T = var.T.copy()
+
+    # Delta 값 계산
+    delta_pi = {country: {industry: var.pi[country][industry] - temp_pi[country][industry] for industry in var.industries} for country in var.countries}
+    delta_p = {i: {j: {industry: var.p_is[i][j][industry] - temp_p[i][j][industry] for industry in var.industries} for j in var.countries if i != j} for i in var.countries}
+    delta_T = {i: {j: {industry: var.T[i][j][industry] - temp_T[i][j][industry] for industry in var.industries} for j in var.countries if i != j} for i in var.countries}
 
     # Call welfare_change with updated delta values
     welfare_change(var.T, var.x, delta_p, var.p_is, var.pi, var.t, delta_pi, delta_T)
+    print("welfare change: ")
+    print(welfare_change(var.T, var.x, delta_p, var.p_is, var.pi, var.t, delta_pi, delta_T))
+    print("\n")
 
 # Print the final Nash tariffs and corresponding t values
 print("Nash Tariffs (tau):")
