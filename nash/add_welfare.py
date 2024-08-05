@@ -25,13 +25,13 @@ var.fill_alpha()
 
 def calc_x(j, s):
     sum = 0
-    sum += var.w[j] * var.L_js[j][s] + var.pi[j][s] + var.L_js[j][s]/var.L_j[j] * var.alpha_denom[j][s]
+    sum += var.w[j] * var.L_js[j][s] + var.pi[j][s] + var.L_js[j][s]/var.L_j[j] * var.gamma_denom[j][s]
     return sum
 
 
 # Welfare function
 def calc_welfare(j, s):
-    return calc_x(j, s) + var.P_j[j]
+    return calc_x(j, s) / var.P_j[j]
 
 def gov_obj(tau_js, j):
     tau_copy = {i: {industry: 0 for industry in var.industries} for i in var.countries if i != j}
@@ -84,7 +84,7 @@ def complicated(j):
         for s in var.industries:
             if i != j:
                 total += (var.t[i][j][s] * var.T[i][j][s] / x2(j) * var.t_hat[i][j][s] * 
-                        (eq_12(j, s) ** (var.sigma[s] - 1)) * (abs(var.tau_hat[i][j][s]) ** -var.sigma[s]) + (var.pi[j][s] / x2(j) * var.pi_hat[j][s]))
+                        (var.P_hat[j][s]** (var.sigma[s] - 1)) * (abs(var.tau_hat[i][j][s]) ** -var.sigma[s]) + (var.pi[j][s] / x2(j) * var.pi_hat[j][s]))
     return total
 
 def term3(j):
@@ -92,8 +92,9 @@ def term3(j):
     for s in var.industries:
         for i in var.countries:
             if i != j:
-                total += (var.pi[j][s] / x2(j) * var.pi_hat[j][s]) * var.alpha[j][i][s] * (abs(var.tau_hat[j][i][s]) ** -var.sigma[s]) * (var.w[i] ** (1 - var.sigma[s])) * (eq_12(i, s) ** (var.sigma[s] - 1))
+                total += (var.pi[j][s] / x2(j) * var.pi_hat[j][s]) * var.alpha[j][i][s] * (abs(var.tau_hat[j][i][s]) ** -var.sigma[s]) * (var.w[i] ** (1 - var.sigma[s])) * (var.P_hat[j][s] ** (var.sigma[s] - 1))
     return total
+
 
 def eq_13(j):
     epsilon = 1e-10
@@ -222,6 +223,7 @@ def welfare_change(T, X, delta_p, p, pi, t, delta_pi, delta_T):
         for i in var.countries:  # i국 (수출국)
             if i != j:
                 for s in var.industries:  # s산업
+                    print(f'{j}{cal_x_j(j)}')
                     term1 += (T[i][j][s] / cal_x_j(j)) * ((cal_delta_p_js(j, s) / cal_p_js(j,s)) - (cal_delta_p_is(i,s) / cal_p_is(i,s)))
                     term3 += (t[i][j][s] * T[i][j][s] / cal_x_j(j)) * ((delta_T[i][j][s] / T[i][j][s]) - (cal_delta_p_is(i,s) / cal_p_is(i,s)))
         
