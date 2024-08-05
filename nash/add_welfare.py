@@ -265,26 +265,36 @@ def update_hats(tau, t, pi): #갱신된 값이 인자로 들어감
 
 
 def calculate_optimum_tariffs(exporter_name):
-    global tau, t, tariff_matrices;  # We'll modify both the global tau and t variables
+    global tau, t, tariff_matrices
     
+    # 각 국가에 대해 고유의 관세율 매트릭스를 사용하도록 수정
     optimal_taus = {j: {industry: 0 for industry in var.industries} for j in var.countries if j != exporter_name}
+    
+    # exporter_name에 대한 인덱스를 가져옵니다.
+    exporter_idx = var.countries.index(exporter_name)
     
     for j, importer in enumerate(var.countries):
         if importer == exporter_name:
             continue
-
-        for k, industry in enumerate(var.industries):
-            idx = 0
-            result = minimize(gov_obj, flat_matrices[j], args=(importer,), constraints=constraints(flat_matrices[j], importer))
-            #result = minimize(gov_obj(optimal_taus, j), flat_matrices[j], args=(importer,), constraints=constraints(flat_matrices[j], importer))
-            optimal_taus[importer][industry] = result.x[k * (var.num_countries)+idx]
+        
+        # flat_matrix는 실제로는 exporter_idx에 해당하는 데이터를 가져와야 합니다.
+        flat_matrix = flat_matrices[exporter_idx]
+        
+        # gov_obj와 constraints 함수 호출
+        result = minimize(gov_obj, flat_matrix, args=(importer,), constraints=constraints(flat_matrix, importer))
+        
+        # 결과 디버깅 출력
+        print(f"Optimization result for exporter {exporter_name}, importer {importer}: {result.x}")
+        
+        idx = 0
+        for industry in var.industries:
+            optimal_taus[importer][industry] = result.x[idx]
             idx += 1
-            
-            var.tau[exporter_name] = optimal_taus
-            var.fill_gamma()
-            
     
-    # welfare_change(var.T, var.x, delta_p, var.p_is, var.pi, var.t, delta_pi, delta_T)
+    # 업데이트 후 gamma를 다시 계산합니다.
+    var.tau[exporter_name] = optimal_taus
+    var.fill_gamma()
+    
     return optimal_taus
 
 
