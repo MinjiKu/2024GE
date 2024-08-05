@@ -2,6 +2,7 @@
 import numpy as np
 from scipy.optimize import minimize
 import pandas as pd
+import matplotlib.pyplot as plt
 
 # Define countries and industries
 countries = ['China', 'Korea', 'Japan', 'USA', 'Germany']

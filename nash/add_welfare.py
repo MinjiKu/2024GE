@@ -15,6 +15,7 @@ import numpy as np
 from scipy.optimize import minimize
 import pandas as pd
 import welfare
+import matplotlib.pyplot as plt
 
 var.fill_gamma()
 var.fill_pi()
@@ -234,7 +235,12 @@ def welfare_change(T, X, delta_p, p, pi, t, delta_pi, delta_T):
     
     return delta_W_W
 
+# Initialize a dictionary to store tariff values for each iteration
+tariff_history = {i: {j: {industry: [] for industry in var.industries} for j in var.countries if j != i} for i in var.countries}
 
+# Ensure the directory exists
+output_dir = "nash_img"
+os.makedirs(output_dir, exist_ok=True)
 
 # Update hats function
 def update_hats(tau, t, pi): #갱신된 값이 인자로 들어감
@@ -280,8 +286,9 @@ temp_p = var.p_is.copy()
 temp_t = var.t.copy()
 temp_T = var.T.copy()
 
+iteration = 25
 # Perform 100 iterations
-for iteration in range(10):
+for iteration in range(iteration):
     print(f"Iteration {iteration + 1}") 
     
     new_taus = {i: {j: {industry: 0 for industry in var.industries} for j in var.countries if j != i} for i in var.countries}
@@ -307,6 +314,8 @@ for iteration in range(10):
             if j != i:
                 for industry in var.industries:
                     var.tau[i][j][industry] = new_taus[i][j][industry]
+                    tariff_history[i][j][industry].append(var.tau[i][j][industry])  # Store the tariff value
+
                     new_t = var.tau[i][j][industry] - 1
                     var.t[i][j][industry] = max(new_t, 1e-10)  # Ensure t is not below 1e-10
     
@@ -340,3 +349,34 @@ for i in var.countries:
     print(f"\nt values for {i} as the home country:")
     df_t = pd.DataFrame({j: {s: var.t[i][j][s] for s in var.industries} for j in var.countries if j != i})
     print(df_t)
+
+    # Print the current state of var.tau
+    print("Nash Tariffs (tau) after iteration", iteration + 1)
+    for i in var.countries:
+        print(f"\nTariffs for {i} as the home country:")
+        df_tau = pd.DataFrame({j: {s: var.tau[i][j][s] for s in var.industries} for j in var.countries if j != i})
+        print(df_tau)
+
+    # Recalculate gamma, var.pi, and alpha with new tau values
+    update_hats(var.tau, var.t, var.pi)
+
+# Plot and save the tariff history for each combination of exporter, importer, and industry
+iterations = list(range(1, iteration+2))
+
+for exporter in var.countries:
+    for importer in var.countries:
+        if exporter != importer:
+            for industry in var.industries:
+                tariffs = tariff_history[exporter][importer][industry]
+
+                plt.figure(figsize=(10, 6))
+                plt.plot(iterations, tariffs, marker='o', color='r')
+                plt.title(f'Tariff for "{industry}" from {exporter} to {importer} in Repeated Game')
+                plt.xlabel('Iteration')
+                plt.ylabel('Tariff')
+                plt.grid(True)
+                
+                # Save the plot
+                file_name = f"{output_dir}/tariff_{industry}_{exporter}_to_{importer}.png"
+                plt.savefig(file_name)
+                plt.close()
