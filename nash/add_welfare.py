@@ -223,7 +223,7 @@ def welfare_change(T, X, delta_p, p, pi, t, delta_pi, delta_T):
         for i in var.countries:  # i국 (수출국)
             if i != j:
                 for s in var.industries:  # s산업
-                    print(f'{j}{cal_x_j(j)}')
+                    #print(f'{j}{cal_x_j(j)}')
                     term1 += (T[i][j][s] / cal_x_j(j)) * ((cal_delta_p_js(j, s) / cal_p_js(j,s)) - (cal_delta_p_is(i,s) / cal_p_is(i,s)))
                     term3 += (t[i][j][s] * T[i][j][s] / cal_x_j(j)) * ((delta_T[i][j][s] / T[i][j][s]) - (cal_delta_p_is(i,s) / cal_p_is(i,s)))
         
