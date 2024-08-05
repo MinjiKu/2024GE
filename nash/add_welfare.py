@@ -168,10 +168,6 @@ def flatten(matrix):
 tariff_matrices = [generate_tariff_matrix() for _ in range(5)]   
 flat_matrices = [flatten(tariff_matrices[i]) for i in range(5)]
 
-def generate_tariff_matrix():
-    tariff_values = np.random.rand(var.num_industries, var.num_countries - 1) * 0.5 + 1.0
-    return tariff_values
-
 def cal_x_j(country):
     sum = 0
     for industry in var.industries:
