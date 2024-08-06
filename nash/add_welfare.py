@@ -52,8 +52,6 @@ def gov_obj(tau_js, j):
     total = 0
     for s in var.industries:
         total += var.pol_econ[j][s] * calc_welfare(j, s)
-    print("total: ")
-    print(total)
     return -total  # We minimize, so we return the negative
 
 # Constraint 1 for country j and industry s
@@ -274,7 +272,8 @@ def calculate_optimum_tariffs(exporter_name):
     
     # exporter_name에 대한 인덱스를 가져옵니다.
     exporter_idx = var.countries.index(exporter_name)
-    
+
+    idx = 0
     for j, importer in enumerate(var.countries):
         if importer == exporter_name:
             continue
@@ -286,13 +285,18 @@ def calculate_optimum_tariffs(exporter_name):
         result = minimize(gov_obj, flat_matrix, args=(importer,), constraints=constraints(flat_matrix, importer))
         
         # 결과 디버깅 출력
-        print(f"Optimization result for exporter {exporter_name}, importer {importer}: {result.x}")
+        # print(f"Optimization result for exporter {exporter_name}, importer {importer}: {result.x}")
+
         
-        idx = 0
+        
+        # idx = 0
+        line_idx = 0
         for industry in var.industries:
-            optimal_taus[importer][industry] = result.x[idx]
-            idx += 1
-    
+            optimal_taus[importer][industry] = result.x[line_idx * (var.num_countries - 1) + idx]
+            # print("line_idx : ")
+            # print(line_idx)
+            line_idx += 1
+        idx += 1
     # 업데이트 후 gamma를 다시 계산합니다.
     var.tau[exporter_name] = optimal_taus
     var.fill_gamma()
@@ -313,8 +317,8 @@ for iteration in range(iteration):
     
     new_taus = {i: {j: {industry: 0 for industry in var.industries} for j in var.countries if j != i} for i in var.countries}
     #문제1. generate_tariff_matrix에서 매번 랜덤 값으로 초기화되는 중
-    tariff_matrices = [generate_tariff_matrix() for _ in range(len(var.countries))]
-    print(tariff_matrices)
+    # tariff_matrices = [generate_tariff_matrix() for _ in range(len(var.countries))]
+    # print(tariff_matrices)
     flat_matrices = [flatten(tariff_matrices[i]) for i in range(len(var.countries))]
     
     for k, country in enumerate(var.countries):
