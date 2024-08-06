@@ -52,6 +52,8 @@ def gov_obj(tau_js, j):
     total = 0
     for s in var.industries:
         total += var.pol_econ[j][s] * calc_welfare(j, s)
+    print("total: ")
+    print(total)
     return -total  # We minimize, so we return the negative
 
 # Constraint 1 for country j and industry s
