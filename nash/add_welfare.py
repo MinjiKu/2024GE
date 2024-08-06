@@ -52,8 +52,8 @@ def gov_obj(tau_js, j):
     total = 0
     for s in var.industries:
         total += var.pol_econ[j][s] * calc_welfare(j, s)
-    print("total: ")
-    print(total)
+    #print("total: ")
+    #print(total)
     return -total  # We minimize, so we return the negative
 
 # Constraint 1 for country j and industry s
@@ -288,15 +288,17 @@ def calculate_optimum_tariffs(exporter_name):
     for j, importer in enumerate(var.countries):
         if importer == exporter_name:
             continue
-        
+        print("before flatten:", var.tau[exporter_name][importer])
         # flat_matrix는 실제로는 exporter_idx에 해당하는 데이터를 가져와야 합니다.
         flat_matrix = flatten_dict(var.tau[exporter_name])
+        # 디버깅 출력
+        print(f"Flat matrix for exporter {exporter_name}, importer {importer}: {flat_matrix}\n")
         
-        # gov_obj와 constraints 함수 호출
         result = minimize(gov_obj, flat_matrix, args=(importer,), constraints=constraints(flat_matrix, importer))
         
-        # 결과 디버깅 출력
-        print(f"Optimization result for exporter {exporter_name}, importer {importer}: {result.x}")
+        # 최적화 결과 디버깅 출력
+        print(f"Optimization result for exporter {exporter_name}, importer {importer}: {result.x}\n")
+        print(f"Minimized gov_obj value for exporter {exporter_name}, importer {importer}: {-result.fun}\n")  # 목적 함수 값 출력 (음수 반환했으므로 다시 음수로 출력)
         
         line_idx = 0
         for industry in var.industries:
