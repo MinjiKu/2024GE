@@ -290,7 +290,7 @@ def calculate_optimum_tariffs(exporter_name):
             continue
         print("before flatten:", var.tau[exporter_name], "\n")
         # flat_matrix는 실제로는 exporter_idx에 해당하는 데이터를 가져와야 합니다.
-        flat_matrix = flatten_dict(var.tau[exporter_name])
+        flat_matrix = flatten_dict({j: {s: var.tau[exporter_name][j][s] for s in var.industries} for j in var.countries if j != exporter_name})
         # 디버깅 출력
         print(f"Flat matrix for exporter {exporter_name}, importer {importer}: {flat_matrix}\n")
         
@@ -303,8 +303,9 @@ def calculate_optimum_tariffs(exporter_name):
         line_idx = 0
         for industry in var.industries:
             optimal_taus[importer][industry] = result.x[line_idx * (var.num_countries - 1) + idx ]
-            
-        idx += 1
+            line_idx += 1
+
+        idx+=1
     # 업데이트 후 gamma를 다시 계산합니다.
     var.tau[exporter_name] = optimal_taus
     var.fill_gamma()
@@ -318,11 +319,11 @@ temp_p = var.p_is.copy()
 temp_t = var.t.copy()
 temp_T = var.T.copy()
 
-iteration = 5
+iteration = 3
 # Perform 100 iterations
 for iter in range(iteration):
     print(f"Iteration {iter + 1}") 
-    
+    print(var.tau)
     new_taus = {i: {j: {industry: 0 for industry in var.industries} for j in var.countries if j != i} for i in var.countries}
     #문제1. generate_tariff_matrix에서 매번 랜덤 값으로 초기화되는 중
     # tariff_matrices = [generate_tariff_matrix() for _ in range(len(var.countries))]
@@ -360,20 +361,20 @@ for iter in range(iteration):
     temp_T = var.T.copy()
 
     # Delta 값 계산
-    delta_pi = {country: {industry: var.pi[country][industry] - temp_pi[country][industry] for industry in var.industries} for country in var.countries}
-    delta_p = {i: {j: {industry: var.p_is[i][j][industry] - temp_p[i][j][industry] for industry in var.industries} for j in var.countries if i != j} for i in var.countries}
-    delta_T = {i: {j: {industry: var.T[i][j][industry] - temp_T[i][j][industry] for industry in var.industries} for j in var.countries if i != j} for i in var.countries}
+    # delta_pi = {country: {industry: var.pi[country][industry] - temp_pi[country][industry] for industry in var.industries} for country in var.countries}
+    # delta_p = {i: {j: {industry: var.p_is[i][j][industry] - temp_p[i][j][industry] for industry in var.industries} for j in var.countries if i != j} for i in var.countries}
+    # delta_T = {i: {j: {industry: var.T[i][j][industry] - temp_T[i][j][industry] for industry in var.industries} for j in var.countries if i != j} for i in var.countries}
 
     # Call welfare_change with updated delta values
-    welfare_change(var.T, var.x, delta_p, var.p_is, var.pi, var.t, delta_pi, delta_T)
-    print("welfare change: ")
-    print(welfare_change(var.T, var.x, delta_p, var.p_is, var.pi, var.t, delta_pi, delta_T))
-    print("\n")
+    # welfare_change(var.T, var.x, delta_p, var.p_is, var.pi, var.t, delta_pi, delta_T)
+    # print("welfare change: ")
+    # print(welfare_change(var.T, var.x, delta_p, var.p_is, var.pi, var.t, delta_pi, delta_T))
+    # print("\n")
 
 # Print the final Nash tariffs and corresponding t values
     print("Nash Tariffs (tau):")
     for i in var.countries:
-        print(f"\nTariffs for {i} as the home country:")
+        print(f"\nTariffs for {i} as country_i:")
         df_tau = pd.DataFrame({j: {s: var.tau[i][j][s] for s in var.industries} for j in var.countries if j != i})
         print(df_tau)
 

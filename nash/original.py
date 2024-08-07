@@ -295,7 +295,7 @@ temp_p = var.p_is.copy()
 temp_t = var.t.copy()
 temp_T = var.T.copy()
 
-iteration = 25
+iteration = 5
 # Perform 100 iterations
 for iteration in range(iteration):
     print(f"Iteration {iteration + 1}") 
