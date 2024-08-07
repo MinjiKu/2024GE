@@ -199,7 +199,7 @@ def cal_delta_p_js(country, industry):
     sum = 0
     for c in var.countries:
         if c == country: continue
-        sum += delta_p[c][country][industry]
+        sum += var.delta_p[c][country][industry]
     return sum
 
 def cal_p_js(country, industry):
@@ -256,6 +256,7 @@ def welfare_change(T, X, delta_p, p, pi, t, delta_pi, delta_T):
 
 # Initialize a dictionary to store tariff values for each iteration
 tariff_history = {i: {j: {industry: [] for industry in var.industries} for j in var.countries if j != i} for i in var.countries}
+welfare_history = {j: {industry: [] for industry in var.industries} for j in var.countries}
 
 # Ensure the directory exists
 output_dir = "nash_img"
@@ -278,9 +279,10 @@ def update_hats(tau, t, pi): #갱신된 값이 인자로 들어감
 
 def calculate_optimum_tariffs(exporter_name):
     global tau, t, tariff_matrices
-    
+
     # 각 국가에 대해 고유의 관세율 매트릭스를 사용하도록 수정
     optimal_taus = {j: {industry: 0 for industry in var.industries} for j in var.countries if j != exporter_name}
+    gov_obj_values = {}  # To store gov_obj values for each importer
     
     # exporter_name에 대한 인덱스를 가져옵니다.
     exporter_idx = var.countries.index(exporter_name)
@@ -293,51 +295,42 @@ def calculate_optimum_tariffs(exporter_name):
         flat_matrix = flatten_dict({j: {s: var.tau[exporter_name][j][s] for s in var.industries} for j in var.countries if j != exporter_name})
         # 디버깅 출력
         print(f"Flat matrix for exporter {exporter_name}, importer {importer}: {flat_matrix}\n")
-        
+
         result = minimize(gov_obj, flat_matrix, args=(importer,), constraints=constraints(flat_matrix, importer))
-        
+
         # 최적화 결과 디버깅 출력
         print(f"Optimization result for exporter {exporter_name}, importer {importer}: {result.x}\n")
         print(f"Minimized gov_obj value for exporter {exporter_name}, importer {importer}: {-result.fun}\n")  # 목적 함수 값 출력 (음수 반환했으므로 다시 음수로 출력)
-        
+
         line_idx = 0
         for industry in var.industries:
-            optimal_taus[importer][industry] = result.x[line_idx * (var.num_countries - 1) + idx ]
+            optimal_taus[importer][industry] = result.x[line_idx * (var.num_countries - 1) + idx]
             line_idx += 1
 
-        idx+=1
+        gov_obj_values[importer] = -result.fun  # Store the minimized value of gov_obj
+        idx += 1
+    
     # 업데이트 후 gamma를 다시 계산합니다.
     var.tau[exporter_name] = optimal_taus
     var.fill_gamma()
-    
-    return optimal_taus
+
+    return optimal_taus, gov_obj_values
 
 
-# 임시 딕셔너리 생성
-temp_pi = var.pi.copy()
-temp_p = var.p_is.copy()
-temp_t = var.t.copy()
-temp_T = var.T.copy()
-
-iteration = 3
+iteration = 20
 # Perform 100 iterations
 for iter in range(iteration):
-    print(f"Iteration {iter + 1}") 
+    print(f"Iteration {iter + 1}")
     print(var.tau)
     new_taus = {i: {j: {industry: 0 for industry in var.industries} for j in var.countries if j != i} for i in var.countries}
-    #문제1. generate_tariff_matrix에서 매번 랜덤 값으로 초기화되는 중
-    # tariff_matrices = [generate_tariff_matrix() for _ in range(len(var.countries))]
-    # flat_matrices = [flatten(tariff_matrices[i]) for i in range(len(var.countries))]
     
     for k, country in enumerate(var.countries):
-        new_taus[country] = calculate_optimum_tariffs(country)
+        new_taus[country], gov_obj_values = calculate_optimum_tariffs(country)
 
-    # Print the final Nash tariffs and corresponding t values
-    print("Nash Tariffs (tau):")
-    for i in var.countries:
-        print(f"\nTariffs for {i} as the home country:")
-        df_tau = pd.DataFrame({j: {s: new_taus[i][j][s] for s in var.industries} for j in var.countries if j != i})
-        print(df_tau)
+        # 각 나라와 산업별로 gov_obj 값을 welfare_history에 저장
+        for importer in gov_obj_values:
+            for s in var.industries:
+                welfare_history[importer][s].append(gov_obj_values[importer])
 
     temp_t = var.t.copy()
     temp_pi = var.pi.copy()
@@ -396,7 +389,7 @@ for iter in range(iteration):
 
 # # Plot and save the tariff history for each combination of exporter, importer, and industry
 # iterations = list(range(1, iteration+2))
-
+iter_list = list(range(1,iteration+1))
 for exporter in var.countries:
     for importer in var.countries:
         if exporter != importer:
@@ -404,7 +397,13 @@ for exporter in var.countries:
                 tariffs = tariff_history[exporter][importer][industry]
 
                 plt.figure(figsize=(10, 6))
-                plt.plot(iter, tariffs, marker='o', color='r')
+                plt.plot(iter_list, tariffs, marker='o', color='r')
+                plt.ylim([1.0, 1.5])
+
+                for i, txt in enumerate(tariffs):
+                    if i == 0 or txt != tariffs[i-1]:  # 첫 포인트이거나, 앞의 값과 다를 때만 표시
+                        plt.annotate(f'{txt:.2f}', (iter_list[i], tariffs[i]), textcoords="offset points", xytext=(0,10), ha='center')
+
                 plt.title(f'Tariff for "{industry}" from {exporter} to {importer} in Repeated Game')
                 plt.xlabel('Iteration')
                 plt.ylabel('Tariff')
@@ -414,3 +413,30 @@ for exporter in var.countries:
                 file_name = f"{output_dir}/tariff_{industry}_{exporter}_to_{importer}.png"
                 plt.savefig(file_name)
                 plt.close()
+
+for country in var.countries:
+    for industry in var.industries:
+        welfare_values = welfare_history[country][industry]
+
+        plt.figure(figsize=(10, 6))
+        plt.plot(iter_list, welfare_values, marker='o', color='b')
+
+        for i, txt in enumerate(welfare_values):
+            if i == 0 or txt != welfare_values[i - 1]:  # 첫 포인트이거나, 앞의 값과 다를 때만 표시
+                plt.annotate(f'{txt:.2f}', (iter_list[i], welfare_values[i]), textcoords="offset points", xytext=(0, 10), ha='center')
+
+        plt.title(f'Welfare for "{industry}" in {country} over Iterations')
+        plt.xlabel('Iteration')
+        plt.ylabel('Welfare')
+        plt.grid(True)
+        
+        # Save the plot
+        file_name = f"{output_dir}/welfare_{industry}_in_{country}.png"
+        plt.savefig(file_name)
+        plt.close()
+
+# # 임시 딕셔너리 생성
+# temp_pi = var.pi.copy()
+# temp_p = var.p_is.copy()
+# temp_t = var.t.copy()
+# temp_T = var.T.copy()
