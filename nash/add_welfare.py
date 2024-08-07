@@ -288,7 +288,7 @@ def calculate_optimum_tariffs(exporter_name):
     for j, importer in enumerate(var.countries):
         if importer == exporter_name:
             continue
-        print("before flatten:", var.tau[exporter_name][importer])
+        print("before flatten:", var.tau[exporter_name], "\n")
         # flat_matrix는 실제로는 exporter_idx에 해당하는 데이터를 가져와야 합니다.
         flat_matrix = flatten_dict(var.tau[exporter_name])
         # 디버깅 출력
@@ -318,10 +318,10 @@ temp_p = var.p_is.copy()
 temp_t = var.t.copy()
 temp_T = var.T.copy()
 
-iteration = 25
+iteration = 5
 # Perform 100 iterations
-for iteration in range(iteration):
-    print(f"Iteration {iteration + 1}") 
+for iter in range(iteration):
+    print(f"Iteration {iter + 1}") 
     
     new_taus = {i: {j: {industry: 0 for industry in var.industries} for j in var.countries if j != i} for i in var.countries}
     #문제1. generate_tariff_matrix에서 매번 랜덤 값으로 초기화되는 중
@@ -371,20 +371,20 @@ for iteration in range(iteration):
     print("\n")
 
 # Print the final Nash tariffs and corresponding t values
-print("Nash Tariffs (tau):")
-for i in var.countries:
-    print(f"\nTariffs for {i} as the home country:")
-    df_tau = pd.DataFrame({j: {s: var.tau[i][j][s] for s in var.industries} for j in var.countries if j != i})
-    print(df_tau)
+    print("Nash Tariffs (tau):")
+    for i in var.countries:
+        print(f"\nTariffs for {i} as the home country:")
+        df_tau = pd.DataFrame({j: {s: var.tau[i][j][s] for s in var.industries} for j in var.countries if j != i})
+        print(df_tau)
 
-print("\nCorresponding t values:")
-for i in var.countries:
-    print(f"\nt values for {i} as the home country:")
-    df_t = pd.DataFrame({j: {s: var.t[i][j][s] for s in var.industries} for j in var.countries if j != i})
-    print(df_t)
+    print("\nCorresponding t values:")
+    for i in var.countries:
+        print(f"\nt values for {i} as the home country:")
+        df_t = pd.DataFrame({j: {s: var.t[i][j][s] for s in var.industries} for j in var.countries if j != i})
+        print(df_t)
 
     # Print the current state of var.tau
-    print("Nash Tariffs (tau) after iteration", iteration + 1)
+    print("Nash Tariffs (tau) after iteration", iter + 1)
     for i in var.countries:
         print(f"\nTariffs for {i} as the home country:")
         df_tau = pd.DataFrame({j: {s: var.tau[i][j][s] for s in var.industries} for j in var.countries if j != i})
@@ -393,8 +393,8 @@ for i in var.countries:
     # Recalculate gamma, var.pi, and alpha with new tau values
     update_hats(var.tau, var.t, var.pi)
 
-# Plot and save the tariff history for each combination of exporter, importer, and industry
-iterations = list(range(1, iteration+2))
+# # Plot and save the tariff history for each combination of exporter, importer, and industry
+# iterations = list(range(1, iteration+2))
 
 for exporter in var.countries:
     for importer in var.countries:
@@ -403,7 +403,7 @@ for exporter in var.countries:
                 tariffs = tariff_history[exporter][importer][industry]
 
                 plt.figure(figsize=(10, 6))
-                plt.plot(iterations, tariffs, marker='o', color='r')
+                plt.plot(iter, tariffs, marker='o', color='r')
                 plt.title(f'Tariff for "{industry}" from {exporter} to {importer} in Repeated Game')
                 plt.xlabel('Iteration')
                 plt.ylabel('Tariff')
