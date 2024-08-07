@@ -417,6 +417,6 @@ for i in countries:
     df = pd.DataFrame(optimal_taus)
     print(df)
     print("\n")
-    df.to_csv(f'/Users/minjiku/Desktop/2024GE학술제/{i}_optimal_tariffs.csv')
+    # df.to_csv(f'/Users/minjiku/Desktop/2024GE학술제/{i}_optimal_tariffs.csv')
 
 
