@@ -167,15 +167,15 @@ def constraints(tau_js, j):
 def generate_tariff_matrix(cname):
     # Create an array of tariffs (excluding the home country)
     # Tariffs for each industry (rows) and country (columns, excluding the home country)
-    # tariff_values = np.random.rand(var.num_industries, var.num_countries - 1) * 0.5 + 1.0
-    tariff_values = var.tau[cname]
+    tariff_values = np.random.rand(var.num_industries, var.num_countries - 1) * 0.5 + 1.0
+    # tariff_values = var.tau[cname]
     return tariff_values
 
-# def flatten(matrix):
-#     return [item for sublist in matrix for item in sublist]
 def flatten(matrix):
-    # Flatten the matrix and filter out non-numerical values
-    return [item for sublist in matrix for item in sublist if isinstance(item, (int, float))]
+    return [item for sublist in matrix for item in sublist]
+# def flatten(matrix):
+#     # Flatten the matrix and filter out non-numerical values
+#     return [item for sublist in matrix for item in sublist if isinstance(item, (int, float))]
 
 # Generate an array of 5 tariff matrices
 tariff_matrices = [generate_tariff_matrix(name) for k, name in enumerate(var.countries)]   
