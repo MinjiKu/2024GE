@@ -59,6 +59,7 @@ def gov_obj(tau_js, j):
         total += var.pol_econ[j][s] * calc_welfare(j, s)
     #print("total: ")
     #print(total)
+
     return -total  # We minimize, so we return the negative
 
 # Constraint 1 for country j and industry s
@@ -171,14 +172,18 @@ def constraints(tau_js, j):
 
 
 # Function to generate tariff matrix
-def generate_tariff_matrix():
+def generate_tariff_matrix(cname):
     # Create an array of tariffs (excluding the home country)
     # Tariffs for each industry (rows) and country (columns, excluding the home country)
     tariff_values = np.random.rand(var.num_industries, var.num_countries - 1) * 0.5 + 1.0
+    # tariff_values = var.tau[cname]
     return tariff_values
 
 def flatten(matrix):
     return [item for sublist in matrix for item in sublist]
+# def flatten(matrix):
+#     # Flatten the matrix and filter out non-numerical values
+#     return [item for sublist in matrix for item in sublist if isinstance(item, (int, float))]
 
 def flatten_dict(dict_matrix):
     """
@@ -191,7 +196,7 @@ def flatten_dict(dict_matrix):
     return flat_list
 
 # Generate an array of 5 tariff matrices
-tariff_matrices = [generate_tariff_matrix() for _ in range(5)]   
+tariff_matrices = [generate_tariff_matrix(name) for k, name in enumerate(var.countries)]   
 flat_matrices = [flatten(tariff_matrices[i]) for i in range(5)]
 
 def cal_x_j(country):
@@ -308,10 +313,6 @@ def calculate_optimum_tariffs(exporter_name):
         #gov_obj_values[importer] = -result.fun  # Store the minimized value of gov_obj
         idx += 1
     
-    # 업데이트 후 gamma를 다시 계산합니다.
-    # var.tau[exporter_name] = optimal_taus
-    
-
     return optimal_taus, gov_obj_values
 
 
