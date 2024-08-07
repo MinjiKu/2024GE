@@ -256,7 +256,7 @@ def welfare_change(T, X, delta_p, p, pi, t, delta_pi, delta_T):
 
 # Initialize a dictionary to store tariff values for each iteration
 tariff_history = {i: {j: {industry: [] for industry in var.industries} for j in var.countries if j != i} for i in var.countries}
-welfare_history = {j: {industry: [] for industry in var.industries} for j in var.countries}
+welfare_history = {i: {j: [] for j in var.countries if j != i} for i in var.countries}
 
 # Ensure the directory exists
 output_dir = "nash_img"
@@ -290,18 +290,11 @@ def calculate_optimum_tariffs(exporter_name):
     for j, importer in enumerate(var.countries):
         if importer == exporter_name:
             continue
-        print("before flatten:", var.tau[exporter_name], "\n")
         # flat_matrix는 실제로는 exporter_idx에 해당하는 데이터를 가져와야 합니다.
         flat_matrix = flatten_dict({j: {s: var.tau[exporter_name][j][s] for s in var.industries} for j in var.countries if j != exporter_name})
         # 디버깅 출력
-        print(f"Flat matrix for exporter {exporter_name}, importer {importer}: {flat_matrix}\n")
-
         result = minimize(gov_obj, flat_matrix, args=(importer,), constraints=constraints(flat_matrix, importer))
-
-        # 최적화 결과 디버깅 출력
-        print(f"Optimization result for exporter {exporter_name}, importer {importer}: {result.x}\n")
-        print(f"Minimized gov_obj value for exporter {exporter_name}, importer {importer}: {-result.fun}\n")  # 목적 함수 값 출력 (음수 반환했으므로 다시 음수로 출력)
-
+        
         line_idx = 0
         for industry in var.industries:
             optimal_taus[importer][industry] = result.x[line_idx * (var.num_countries - 1) + idx]
@@ -323,14 +316,10 @@ for iter in range(iteration):
     print(f"Iteration {iter + 1}")
     print(var.tau)
     new_taus = {i: {j: {industry: 0 for industry in var.industries} for j in var.countries if j != i} for i in var.countries}
+    gov_obj_values = {i: {j: 0 for j in var.countries if j != i} for i in var.countries}
     
     for k, country in enumerate(var.countries):
-        new_taus[country], gov_obj_values = calculate_optimum_tariffs(country)
-
-        # 각 나라와 산업별로 gov_obj 값을 welfare_history에 저장
-        for importer in gov_obj_values:
-            for s in var.industries:
-                welfare_history[importer][s].append(gov_obj_values[importer])
+        new_taus[country], gov_obj_values[country] = calculate_optimum_tariffs(country)
 
     temp_t = var.t.copy()
     temp_pi = var.pi.copy()
@@ -342,7 +331,7 @@ for iter in range(iteration):
                 for industry in var.industries:
                     var.tau[i][j][industry] = new_taus[i][j][industry]
                     tariff_history[i][j][industry].append(var.tau[i][j][industry])  # Store the tariff value
-
+                    welfare_history[i][j].append(gov_obj_values[i][j])
                     new_t = var.tau[i][j][industry] - 1
                     var.t[i][j][industry] = max(new_t, 1e-10)  # Ensure t is not below 1e-10
     
@@ -387,6 +376,7 @@ for iter in range(iteration):
     # Recalculate gamma, var.pi, and alpha with new tau values
     update_hats(var.tau, var.t, var.pi)
 
+print(welfare_history)
 # # Plot and save the tariff history for each combination of exporter, importer, and industry
 # iterations = list(range(1, iteration+2))
 iter_list = list(range(1,iteration+1))
@@ -413,27 +403,29 @@ for exporter in var.countries:
                 file_name = f"{output_dir}/tariff_{industry}_{exporter}_to_{importer}.png"
                 plt.savefig(file_name)
                 plt.close()
+for exporter in var.countries:
+    for importer in var.countries:
+        if exporter != importer:
+            welfares = welfare_history[exporter][importer]
 
-for country in var.countries:
-    for industry in var.industries:
-        welfare_values = welfare_history[country][industry]
+            plt.figure(figsize=(10, 6))
+            plt.plot(iter_list, welfares, marker='o', color='r')
+            plt.ylim([1.0, 1.5])
 
-        plt.figure(figsize=(10, 6))
-        plt.plot(iter_list, welfare_values, marker='o', color='b')
+            for i, txt in enumerate(welfares):
+                if i == 0 or txt != welfares[i-1]:  # 첫 포인트이거나, 앞의 값과 다를 때만 표시
+                    plt.annotate(f'{txt:.2f}', (iter_list[i], welfares[i]), textcoords="offset points", xytext=(0,10), ha='center')
 
-        for i, txt in enumerate(welfare_values):
-            if i == 0 or txt != welfare_values[i - 1]:  # 첫 포인트이거나, 앞의 값과 다를 때만 표시
-                plt.annotate(f'{txt:.2f}', (iter_list[i], welfare_values[i]), textcoords="offset points", xytext=(0, 10), ha='center')
+            plt.title(f'Welfare for {importer} in Repeated Game')
+            plt.xlabel('Reapeated Game')
+            plt.ylabel('Welfare')
+            plt.grid(True)
+            
+            # Save the plot
+            file_name = f"{output_dir}/welfare_{exporter}_to_{importer}.png" #같다는 것을 확인했으면 제목 수정하기
+            plt.savefig(file_name)
+            plt.close()
 
-        plt.title(f'Welfare for "{industry}" in {country} over Iterations')
-        plt.xlabel('Iteration')
-        plt.ylabel('Welfare')
-        plt.grid(True)
-        
-        # Save the plot
-        file_name = f"{output_dir}/welfare_{industry}_in_{country}.png"
-        plt.savefig(file_name)
-        plt.close()
 
 # # 임시 딕셔너리 생성
 # temp_pi = var.pi.copy()
