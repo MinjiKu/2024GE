@@ -303,8 +303,8 @@ def calculate_optimum_tariffs(exporter_name):
         idx += 1
     
     # 업데이트 후 gamma를 다시 계산합니다.
-    var.tau[exporter_name] = optimal_taus
-    var.fill_gamma()
+    #var.tau[exporter_name] = optimal_taus
+
 
     return optimal_taus, gov_obj_values
 
@@ -333,7 +333,7 @@ for iter in range(iteration):
                     welfare_history[i][j][industry].append(gov_obj_values[i][j][industry])
                     new_t = var.tau[i][j][industry] - 1
                     var.t[i][j][industry] = max(new_t, 1e-10)  # Ensure t is not below 1e-10
-    
+    var.fill_gamma()
     # Recalculate gamma, var.pi, and alpha with new tau values
     update_hats(var.tau, var.t, var.pi)
     
