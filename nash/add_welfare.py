@@ -295,7 +295,7 @@ def calculate_optimum_tariffs(exporter_name):
     gov_obj_values = {j: {industry: 0 for industry in var.industries} for j in var.countries if j != exporter_name} 
     
     #exporter_idx = var.countries.index(exporter_name)
-    idx = 0
+    count_idx = 0
     for j, importer in enumerate(var.countries):
         if importer == exporter_name:
             continue
@@ -304,23 +304,21 @@ def calculate_optimum_tariffs(exporter_name):
         
         result = minimize(gov_obj, flat_matrix, args=(importer,), constraints=constraints(flat_matrix, importer))
         
-        line_idx = 0
+        idx = 0
         for industry in var.industries:
-            optimal_taus[importer][industry] = result.x[line_idx * (var.num_countries - 1) + idx]
+            optimal_taus[importer][industry] = result.x[count_idx * (var.num_industries) + idx]
             gov_obj_values[importer][industry] = -result.fun
-            line_idx += 1
-
-        #gov_obj_values[importer] = -result.fun  # Store the minimized value of gov_obj
-        idx += 1
+            idx += 1
+        count_idx += 1
     
     return optimal_taus, gov_obj_values
 
 
-iteration = 20
+iteration = 5
 # Perform 100 iterations
 for iter in range(iteration):
     print(f"Iteration {iter + 1}")
-    print(var.tau)
+    # print(var.tau)
     new_taus = {i: {j: {industry: 0 for industry in var.industries} for j in var.countries if j != i} for i in var.countries}
     gov_obj_values = {i: {j: {industry: 0 for industry in var.industries} for j in var.countries if j != i} for i in var.countries}
     
@@ -362,30 +360,30 @@ for iter in range(iteration):
     # print(welfare_change(var.T, var.x, delta_p, var.p_is, var.pi, var.t, delta_pi, delta_T))
     # print("\n")
 
-# Print the final Nash tariffs and corresponding t values
+    # Print the final Nash tariffs and corresponding t values
     print("Nash Tariffs (tau):")
     for i in var.countries:
         print(f"\nTariffs for {i} as country_i:")
         df_tau = pd.DataFrame({j: {s: var.tau[i][j][s] for s in var.industries} for j in var.countries if j != i})
         print(df_tau)
 
-    print("\nCorresponding t values:")
-    for i in var.countries:
-        print(f"\nt values for {i} as the home country:")
-        df_t = pd.DataFrame({j: {s: var.t[i][j][s] for s in var.industries} for j in var.countries if j != i})
-        print(df_t)
+    # print("\nCorresponding t values:")
+    # for i in var.countries:
+    #     print(f"\nt values for {i} as the home country:")
+    #     df_t = pd.DataFrame({j: {s: var.t[i][j][s] for s in var.industries} for j in var.countries if j != i})
+    #     print(df_t)
 
     # Print the current state of var.tau
-    print("Nash Tariffs (tau) after iteration", iter + 1)
-    for i in var.countries:
-        print(f"\nTariffs for {i} as the home country:")
-        df_tau = pd.DataFrame({j: {s: var.tau[i][j][s] for s in var.industries} for j in var.countries if j != i})
-        print(df_tau)
+    # print("Nash Tariffs (tau) after iteration", iter + 1)
+    # for i in var.countries:
+    #     print(f"\nTariffs for {i} as the home country:")
+    #     df_tau = pd.DataFrame({j: {s: var.tau[i][j][s] for s in var.industries} for j in var.countries if j != i})
+    #     print(df_tau)
 
     # Recalculate gamma, var.pi, and alpha with new tau values
     update_hats(var.tau, var.t, var.pi)
 
-print(welfare_history)
+# print(welfare_history)
 # # Plot and save the tariff history for each combination of exporter, importer, and industry
 # iterations = list(range(1, iteration+2))
 iter_list = list(range(1,iteration+1))

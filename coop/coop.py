@@ -160,35 +160,39 @@ def update_hats(tau, t, pi):
 def calculate_optimum_tariffs(exporter_name):
     global tau, t, tariff_matrices
 
+    # 각 국가에 대해 고유의 관세율 매트릭스를 사용하도록 수정
     optimal_taus = {j: {industry: 0 for industry in var.industries} for j in var.countries if j != exporter_name}
-    gov_obj_values = {}  # To store gov_obj values for each importer
-
+    gov_obj_values = {j: {industry: 0 for industry in var.industries} for j in var.countries if j != exporter_name} 
+    
+    #exporter_idx = var.countries.index(exporter_name)
+    count_idx = 0
     for j, importer in enumerate(var.countries):
         if importer == exporter_name:
             continue
-
-        # flat_matrix needs to get exporter_idx data
+        # flat_matrix는 실제로는 exporter_idx에 해당하는 데이터를 가져와야 합니다.
         flat_matrix = flatten_dict({j: {s: var.tau[exporter_name][j][s] for s in var.industries} for j in var.countries if j != exporter_name})
-
+        
         result = minimize(gov_obj, flat_matrix, args=(importer,), constraints=constraints(flat_matrix, importer))
-
+        
         idx = 0
         for industry in var.industries:
-            optimal_taus[importer][industry] = result.x[idx]
+            optimal_taus[importer][industry] = result.x[count_idx * (var.num_industries) + idx]
+            gov_obj_values[importer][industry] = -result.fun
             idx += 1
+        count_idx += 1
 
-        gov_obj_values[importer] = -result.fun  # Store the minimized value of gov_obj
-
-    var.tau[exporter_name] = optimal_taus
-    var.fill_gamma()
-
+    # Update the global `var.tau` with the new optimal tariffs
+    for importer in optimal_taus:
+        for industry in optimal_taus[importer]:
+            var.tau[exporter_name][importer][industry] = optimal_taus[importer][industry]
+    
     return optimal_taus, gov_obj_values
 
 # Initialize a dictionary to store tariff values for each iteration
 tariff_history = {exporter: {importer: {industry: [] for industry in var.industries} for importer in var.countries if importer != exporter} for exporter in var.countries}
 
 # Ensure the directory exists
-output_dir = "nash_img"
+output_dir = "coop_img"
 os.makedirs(output_dir, exist_ok=True)
 
 # Initialize a dictionary to store welfare values for each iteration
@@ -217,7 +221,7 @@ def constraints_with_cooperative_welfare(tau_js, j, cooperative_welfare_target):
     return cons
 
 # Run iterations until tariffs converge
-for iteration in range(50):  # Arbitrary number of iterations
+for iteration in range(5):  # Arbitrary number of iterations
     previous_tau = {exporter: {importer: {industry: var.tau[exporter][importer][industry] for industry in var.industries} for importer in var.countries if importer != exporter} for exporter in var.countries}
 
     for exporter in var.countries:
@@ -263,6 +267,20 @@ for iteration in range(50):  # Arbitrary number of iterations
 
     if converged:
         break
+
+# After the loop ends, print the final cooperative tariffs:
+print("Cooperative Tariffs (tau):")
+
+for exporter in var.countries:
+    print(f"\nTariffs for {exporter} as country_i:")
+    
+    # Create a DataFrame to organize the tariffs neatly
+    df_tau = pd.DataFrame({importer: {industry: var.tau[exporter][importer][industry] 
+                                      for industry in var.industries} 
+                           for importer in var.countries if importer != exporter})
+
+    # Print the DataFrame in the required format
+    print(df_tau.T.to_string())
 
 # Save tariff history to CSV
 for exporter in var.countries:
