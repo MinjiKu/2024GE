@@ -36,45 +36,15 @@ def calc_x(j, s):
 def calc_welfare(j, s):
     return calc_x(j, s) / var.P_j[j]
 
-# def gov_obj(tau_js, j):
+def gov_obj(tau_js, j):
 
     total = 0
     for s in var.industries:
         total += var.pol_econ[j][s] * calc_welfare(j, s)
     #print("total: ")
     #print(total)
-    
-    return -total  # We minimize, so we return the negative
-
-def gov_obj(tau_js, j):
-    total = 0
-    tau_index = 0  # Initialize index for tau_js array
-
-    for s in var.industries:
-        # Calculate welfare for industry s
-        welfare = calc_welfare(j, s)
-        
-        # Retrieve the corresponding tau value from the flat array
-        tau_value = tau_js[tau_index]
-        
-        # Introduce non-linearity by squaring the welfare
-        total += var.pol_econ[j][s] * (welfare ** 2)  # Square of welfare
-        
-        # Additional non-linearity: Exponential term based on tau_js
-        tau_adjustment = np.exp(-abs(tau_value))  # Exponential decay term based on tau
-        total += var.pol_econ[j][s] * tau_adjustment * welfare
-        
-        # Move to the next index for tau_js
-        tau_index += 1
-
-    # Add a non-linear penalty based on the sum of tariffs
-    total_penalty = np.sum(np.exp(-abs(tau_js)))  # Penalize high tariffs more
-    total += total_penalty
-
     return np.random.rand()
     return -total  # We minimize, so we return the negative
-
-# def gov_obj(tau_js, j):
     total = 0
     tau_index = 0  # Initialize index for tau_js array
 
@@ -361,7 +331,7 @@ def constraints_with_cooperative_welfare(tau_js, j, cooperative_welfare_target):
 #     # Print the DataFrame in the required format
 #     print(df_tau.T.to_string())
 # Run iterations until tariffs converge
-for iteration in range(5):  # Arbitrary number of iterations
+for iteration in range(100):  # Arbitrary number of iterations
     print(f"\n--- Iteration {iteration + 1} ---")
     
     previous_tau = {exporter: {importer: {industry: var.tau[exporter][importer][industry] for industry in var.industries} for importer in var.countries if importer != exporter} for exporter in var.countries}
@@ -431,14 +401,38 @@ for exporter in var.countries:
             df = pd.DataFrame(tariff_history[exporter][importer][industry], columns=["Tariff"])
             df.to_csv(os.path.join(output_dir, f"tariff_history_{exporter}_{importer}_{industry}.csv"), index=False)
 
-# # Plotting welfare for each country
-# for country in var.countries:
-#     plt.figure()
-#     for industry in var.industries:
-#         plt.plot(welfare_history[country][industry], label=f"{industry}")
-#     plt.xlabel("Iteration")
-#     plt.ylabel("Welfare")
-#     plt.legend()
-#     plt.title(f"Welfare Convergence for Country: {country}")
-#     plt.savefig(os.path.join(output_dir, f"welfare_convergence_{country}.png"))
-#     plt.close()
+# Plotting tariffs with logarithmic scale
+def plot_tariff_history():
+    for exporter in var.countries:
+        for importer in var.countries:
+            if importer == exporter:
+                continue
+            for industry in var.industries:
+                plt.figure()
+                plt.plot(tariff_history[exporter][importer][industry], label=f"{importer} - {industry}")
+                plt.xlabel("Iteration")
+                plt.ylabel("Tariff")
+                plt.yscale('log')  # Set y-axis to logarithmic scale
+                plt.legend()
+                plt.title(f"Tariff Convergence for Exporter: {exporter}")
+                plt.savefig(os.path.join(output_dir, f"tariff_convergence_{exporter}_{importer}_{industry}.png"))
+                plt.close()
+
+# Call the function to plot tariffs
+plot_tariff_history()
+
+def plot_welfare_history():
+    for country in var.countries:
+        plt.figure()
+        for industry in var.industries:
+            plt.plot(welfare_history[country][industry], label=f"{industry}")
+        plt.xlabel("Iteration")
+        plt.ylabel("Welfare")
+        plt.yscale('log')  # Set y-axis to logarithmic scale
+        plt.legend()
+        plt.title(f"Welfare Convergence for Country: {country}")
+        plt.savefig(os.path.join(output_dir, f"welfare_convergence_{country}.png"))
+        plt.close()
+
+# Call the function to plot welfare
+plot_welfare_history()
