@@ -55,6 +55,7 @@ Throughout the research, we track the change in welfare in order to compare <br>
 This research aims to find tariff strategy by analyzing welfare changes
 
 ## Main problems encountered & Further endeavors needed
-```calculating nash tariffs in repeating game``` <br>
-```updating tariffs and using the updated tariffs for new calculation is difficult to implement``` <br>
-```enaling potential room for code expansion is difficult``` <br>
+* calculating nash tariffs in repeating game
+* making sure that logic is correctly working in accordance of equations
+* updating tariffs and using the updated tariffs for new calculation is difficult to implement
+* enaling potential room for code expansion is difficult
