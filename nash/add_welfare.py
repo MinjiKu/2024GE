@@ -162,11 +162,11 @@ def constraints(tau_js, j):
     # # Constraint 2: eq_13
     # cons.append({'type': 'eq', 'fun': lambda tau_js, j=j: eq_13(j)})
     
-    # Constraint 3: eq_10 for each country i and industry s
-    for i in var.countries:
-        if i != j:
-            for s in var.industries:
-                cons.append({'type': 'eq', 'fun': lambda tau_js, i=i, s=s: eq_10(i, s)})
+    # # Constraint 3: eq_10 for each country i and industry s
+    # for i in var.countries:
+    #     if i != j:
+    #         for s in var.industries:
+    #             cons.append({'type': 'eq', 'fun': lambda tau_js, i=i, s=s: eq_10(i, s)})
     
     return cons
 
@@ -316,7 +316,7 @@ def calculate_optimum_tariffs(exporter_name):
     return optimal_taus, gov_obj_values
 
 
-iteration = 5
+iteration = 100
 # Perform 100 iterations
 for iter in range(iteration):
     print(f"Iteration {iter + 1}")
@@ -385,22 +385,84 @@ for iter in range(iteration):
     # Recalculate gamma, var.pi, and alpha with new tau values
     update_hats(var.tau, var.t, var.pi)
 
-# print(welfare_history)
-# # Plot and save the tariff history for each combination of exporter, importer, and industry
-# iterations = list(range(1, iteration+2))
-iter_list = list(range(1,iteration+1))
+
+# iter_list = list(range(1,iteration+1))
+# for exporter in var.countries:
+#     for importer in var.countries:
+#         if exporter != importer:
+#             for industry in var.industries:
+#                 tariffs = tariff_history[exporter][importer][industry]
+
+#                 plt.figure(figsize=(10, 6))
+#                 plt.plot(iter_list, tariffs, marker='o', color='#bb0a1e', linewidth = 2)
+#                 plt.ylim([1.0, 1.5])
+
+#                 for i, txt in enumerate(tariffs):
+#                     if i == 0 or txt != tariffs[i-1]:  # 첫 포인트이거나, 앞의 값과 다를 때만 표시
+#                         plt.annotate(f'{txt:.2f}', (iter_list[i], tariffs[i]), textcoords="offset points", xytext=(0,10), ha='center')
+
+#                 plt.title(f'Tariff for "{industry}" from {exporter} to {importer} in Repeated Game')
+#                 plt.xlabel('Iteration')
+#                 plt.ylabel('Tariff')
+#                 plt.grid(True)
+                
+#                 # Save the plot
+#                 file_name = f"{output_dir}/tariff_{industry}_{exporter}_to_{importer}.png"
+#                 plt.savefig(file_name)
+#                 plt.close()
+
+# for exporter in var.countries:
+#     for importer in var.countries:
+#         if exporter != importer:
+#             welfares = welfare_history[exporter][importer][industry]
+
+#             plt.figure(figsize=(10, 6))
+#             plt.plot(iter_list, welfares, marker='o', color='#bb0a1e', linewidth = 2)
+#             #plt.ylim([1.0, 1.5])
+#             plt.grid(True, linestyle='--', alpha=0.7)
+
+
+#             for i, txt in enumerate(welfares):
+#                 if i == 0 or txt != welfares[i-1]:  # 첫 포인트이거나, 앞의 값과 다를 때만 표시
+#                     plt.annotate(f'{txt:.1f}', (iter_list[i], welfares[i]), textcoords="offset points", xytext=(0,10), ha='center')
+
+#             plt.title(f'Welfare for {importer} in Repeated Game')
+#             plt.xlabel('Reapeated Game')
+#             plt.ylabel('Welfare')
+#             plt.grid(True)
+            
+#             # Save the plot
+#             file_name = f"{output_dir}/welfare_{importer}.png" #같다는 것을 확인했으면 제목 수정하기
+#             plt.savefig(file_name)
+#             plt.close()
+
+
+# # # 임시 딕셔너리 생성
+# # temp_pi = var.pi.copy()
+# # temp_p = var.p_is.copy()
+# # temp_t = var.t.copy()
+# # temp_T = var.T.copy()
+
+# Plot and save the tariff history for each combination of exporter, importer, and industry
+iter_list = list(range(1, iteration + 1))
+
 for exporter in var.countries:
     for importer in var.countries:
         if exporter != importer:
             for industry in var.industries:
                 tariffs = tariff_history[exporter][importer][industry]
-
+                
                 plt.figure(figsize=(10, 6))
-                plt.plot(iter_list, tariffs, marker='o', color='#bb0a1e', linewidth = 2)
-                plt.ylim([1.0, 1.5])
+                plt.plot(iter_list, tariffs, marker='o', color='#bb0a1e', linewidth=2)
+                
+                # Dynamically adjust y-axis limits
+                y_min = min(tariffs)
+                y_max = max(tariffs)
+                y_margin = (y_max - y_min) * 0.1
+                plt.ylim(y_min - y_margin, y_max + y_margin)
 
                 for i, txt in enumerate(tariffs):
-                    if i == 0 or txt != tariffs[i-1]:  # 첫 포인트이거나, 앞의 값과 다를 때만 표시
+                    if i == 0 or txt != tariffs[i-1]:  # Show only if different from previous
                         plt.annotate(f'{txt:.2f}', (iter_list[i], tariffs[i]), textcoords="offset points", xytext=(0,10), ha='center')
 
                 plt.title(f'Tariff for "{industry}" from {exporter} to {importer} in Repeated Game')
@@ -413,34 +475,36 @@ for exporter in var.countries:
                 plt.savefig(file_name)
                 plt.close()
 
+# Plot and save the welfare history for each combination of exporter and importer
 for exporter in var.countries:
     for importer in var.countries:
         if exporter != importer:
             welfares = welfare_history[exporter][importer][industry]
-
+            
             plt.figure(figsize=(10, 6))
-            plt.plot(iter_list, welfares, marker='o', color='#bb0a1e', linewidth = 2)
-            #plt.ylim([1.0, 1.5])
-            plt.grid(True, linestyle='--', alpha=0.7)
+            plt.plot(iter_list, welfares, marker='o', color='#bb0a1e', linewidth=2)
 
+            # Dynamically adjust y-axis limits
+            y_min = min(welfares)
+            y_max = max(welfares)
+            y_margin = (y_max - y_min) * 0.1
+            plt.ylim(y_min - y_margin, y_max + y_margin)
 
             for i, txt in enumerate(welfares):
-                if i == 0 or txt != welfares[i-1]:  # 첫 포인트이거나, 앞의 값과 다를 때만 표시
+                if i == 0 or txt != welfares[i-1]:  # Show only if different from previous
                     plt.annotate(f'{txt:.1f}', (iter_list[i], welfares[i]), textcoords="offset points", xytext=(0,10), ha='center')
 
             plt.title(f'Welfare for {importer} in Repeated Game')
-            plt.xlabel('Reapeated Game')
+            plt.xlabel('Iteration')
             plt.ylabel('Welfare')
             plt.grid(True)
             
             # Save the plot
-            file_name = f"{output_dir}/welfare_{importer}.png" #같다는 것을 확인했으면 제목 수정하기
+            file_name = f"{output_dir}/welfare_{importer}.png"
             plt.savefig(file_name)
             plt.close()
 
+# Use logarithmic scale for tariffs
+plt.yscale('log')
 
-# # 임시 딕셔너리 생성
-# temp_pi = var.pi.copy()
-# temp_p = var.p_is.copy()
-# temp_t = var.t.copy()
-# temp_T = var.T.copy()
+plt.figure(figsize=(12, 8), dpi=150)  # Increase figure size and resolution
