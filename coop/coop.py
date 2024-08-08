@@ -71,15 +71,53 @@ def calc_x(j, s):
 def calc_welfare(j, s):
     return calc_x(j, s) / var.P_j[j]
 
+<<<<<<< HEAD
 def gov_obj(tau, j):
     # Update economic variables based on the current tau_js
     update_economic_variables(tau, j)
+=======
+def gov_obj(tau_js, j):
+>>>>>>> cabf1e5 (progress)
 
     total = 0
     for s in var.industries:
         total += var.pol_econ[j][s] * calc_welfare(j, s)
+<<<<<<< HEAD
 
     #print("total (gov_obj) for",j, iter ,":",total)
+=======
+    #print("total: ")
+    #print(total)
+    return np.random.rand()
+    return -total  # We minimize, so we return the negative
+    total = 0
+    tau_index = 0  # Initialize index for tau_js array
+
+    for s in var.industries:
+        # Print the current tau value and welfare for debugging
+        print(f"Country: {j}, Industry: {s}, Tau Value: {tau_js[tau_index]}")
+
+        welfare = calc_welfare(j, s)
+        print(f"Welfare: {welfare}")
+
+        tau_value = tau_js[tau_index]
+
+        # Introduce non-linearity by squaring the welfare
+        total += var.pol_econ[j][s] * (welfare ** 2)  # Square of welfare
+
+        # Additional non-linearity: Exponential term based on tau_js
+        tau_adjustment = np.exp(-abs(tau_value))  # Exponential decay term based on tau
+        total += var.pol_econ[j][s] * tau_adjustment * welfare
+
+        # Move to the next index for tau_js
+        tau_index += 1
+
+    # Print the final total for debugging
+    print(f"Total Objective Value for Country {j}: {total}")
+
+    total_penalty = np.sum(np.exp(-abs(tau_js)))  # Penalize high tariffs more
+    total += total_penalty
+>>>>>>> cabf1e5 (progress)
 
     return -total  # We minimize, so we return the negative
 
@@ -226,9 +264,51 @@ def calculate_cooperative_welfare_target():
     # Initialize total welfare gain
     total_welfare_gain = 0
     
+<<<<<<< HEAD
     # Iterate over each importer and their associated welfare gains
     for importer in welfare_gains:
         for exporter in welfare_gains[importer]:
+=======
+#     # Create a DataFrame to organize the tariffs neatly
+#     df_tau = pd.DataFrame({importer: {industry: var.tau[exporter][importer][industry] 
+#                                     for industry in var.industries} 
+#                         for importer in var.countries if importer != exporter})
+
+#     # Print the DataFrame in the required format
+#     print(df_tau.T.to_string())
+# Run iterations until tariffs converge
+for iteration in range(100):  # Arbitrary number of iterations
+    print(f"\n--- Iteration {iteration + 1} ---")
+    
+    previous_tau = {exporter: {importer: {industry: var.tau[exporter][importer][industry] for industry in var.industries} for importer in var.countries if importer != exporter} for exporter in var.countries}
+
+    for exporter in var.countries:
+        tau, gov_obj_values = calculate_optimum_tariffs(exporter)
+
+        print("gov_obj_values")
+        print(gov_obj_values)
+
+        for importer in tau:
+            for industry in tau[importer]:
+                tariff_history[exporter][importer][industry].append(tau[importer][industry])
+
+        # Print the cooperative tariffs for the current iteration
+        print(f"\nCooperative Tariffs after optimizing {exporter}:")
+        df_tau = pd.DataFrame({importer: {industry: var.tau[exporter][importer][industry] 
+                                          for industry in var.industries} 
+                               for importer in var.countries if importer != exporter})
+        print(df_tau.T.to_string())
+
+    # Update welfare history
+    for country in var.countries:
+        for industry in var.industries:
+            welfare_history[country][industry].append(calc_welfare(country, industry))
+
+    # Check for convergence (e.g., using a small threshold for changes in tariffs)
+    converged = True
+    for exporter in var.countries:
+        for importer in var.countries:
+>>>>>>> cabf1e5 (progress)
             if importer == exporter:
                 continue
             total_welfare_gain += welfare_gains[importer][exporter]
@@ -251,6 +331,7 @@ def calc_welfare2(j, s, tau_dict):
 
 calculate_cooperative_welfare_target()
 
+<<<<<<< HEAD
 # Calculate the starting welfare for each country
 starting_welfare = {country: 0 for country in var.countries}
 for country in var.countries:
@@ -364,3 +445,40 @@ plt.savefig('start&target.png')
 # plt.legend()
 # plt.savefig('change_rate_plot.png')
 # plt.tight_layout()
+=======
+# Plotting tariffs with logarithmic scale
+def plot_tariff_history():
+    for exporter in var.countries:
+        for importer in var.countries:
+            if importer == exporter:
+                continue
+            for industry in var.industries:
+                plt.figure()
+                plt.plot(tariff_history[exporter][importer][industry], label=f"{importer} - {industry}")
+                plt.xlabel("Iteration")
+                plt.ylabel("Tariff")
+                plt.yscale('log')  # Set y-axis to logarithmic scale
+                plt.legend()
+                plt.title(f"Tariff Convergence for Exporter: {exporter}")
+                plt.savefig(os.path.join(output_dir, f"tariff_convergence_{exporter}_{importer}_{industry}.png"))
+                plt.close()
+
+# Call the function to plot tariffs
+plot_tariff_history()
+
+def plot_welfare_history():
+    for country in var.countries:
+        plt.figure()
+        for industry in var.industries:
+            plt.plot(welfare_history[country][industry], label=f"{industry}")
+        plt.xlabel("Iteration")
+        plt.ylabel("Welfare")
+        plt.yscale('log')  # Set y-axis to logarithmic scale
+        plt.legend()
+        plt.title(f"Welfare Convergence for Country: {country}")
+        plt.savefig(os.path.join(output_dir, f"welfare_convergence_{country}.png"))
+        plt.close()
+
+# Call the function to plot welfare
+plot_welfare_history()
+>>>>>>> cabf1e5 (progress)
