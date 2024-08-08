@@ -216,7 +216,7 @@ def cal_p_js(country, industry):
     sum = 0
     for c in var.countries:
         if c == country: continue
-        sum += var.p_is[c][country][industry]
+        sum += var.p_ijs[c][country][industry]
     return sum
 
 def cal_delta_p_is(country, industry):
@@ -230,7 +230,7 @@ def cal_p_is(country, industry):
     sum = 0
     for c in var.countries:
         if c == country: continue
-        sum += var.p_is[country][c][industry]
+        sum += var.p_ijs[country][c][industry]
     return sum
 
 def welfare_change(T, X, delta_p, p, pi, t, delta_pi, delta_T):
@@ -315,6 +315,36 @@ def calculate_optimum_tariffs(exporter_name):
     
     return optimal_taus, gov_obj_values
 
+def calculate_p_is(p_ijs):
+    p_is = {i: {s: 0 for s in var.industries} for i in var.countries}
+    
+    for i in var.countries:
+        for s in var.industries:
+            max_value = float('-inf')
+            for j in var.countries:
+                if j != i:
+                    max_value = max(max_value, p_ijs[i][j][s])
+            p_is[i][s] = max_value
+    
+    return p_is
+
+def calculate_p_js(p_ijs, countries, industries):
+    p_js = {j: {s: float('inf') for s in industries} for j in countries}
+    
+    for j in countries:
+        for s in industries:
+            min_value = float('inf')
+            for i in countries:
+                if i != j:
+                    min_value = min(min_value, p_ijs[i][j][s])
+            p_js[j][s] = min_value
+    
+    return p_js
+
+# 함수 호출
+p_is = calculate_p_is(var.p_ijs)
+p_js = calculate_p_js(var.p_ijs)
+
 
 iteration = 20
 # Perform 100 iterations
@@ -327,7 +357,8 @@ for iter in range(iteration):
     for k, country in enumerate(var.countries):
         new_taus[country], gov_obj_values[country] = calculate_optimum_tariffs(country)
 
-    temp_t = var.t.copy()
+    temp_p = var.p_ijs.copy() 
+    temp_T = var.T.copy()
     temp_pi = var.pi.copy()
 
     # Update tau with new values and adjust t accordingly
@@ -335,31 +366,35 @@ for iter in range(iteration):
         for j in var.countries:
             if j != i:
                 for industry in var.industries:
+                    previous_tau = var.tau[i][j][industry]
                     var.tau[i][j][industry] = new_taus[i][j][industry]
                     tariff_history[i][j][industry].append(var.tau[i][j][industry])  # Store the tariff value
                     welfare_history[i][j][industry].append(gov_obj_values[i][j][industry])
                     new_t = var.tau[i][j][industry] - 1
                     var.t[i][j][industry] = max(new_t, 1e-10)  # Ensure t is not below 1e-10
+
+                    # Calculate the change rate of tau and apply it to p_ijs
+                    change_rate = (var.tau[i][j][industry] - previous_tau) / previous_tau if previous_tau != 0 else 0
+                    var.p_ijs[i][j][industry] *= (1 + change_rate)
     
+    
+    calculate_p_is(var.p_ijs)
+    calculate_p_js(var.p_ijs)
     var.fill_gamma()
     var.fill_alpha()
 
     # Recalculate gamma, var.pi, and alpha with new tau values
     update_hats(var.tau, var.t, var.pi)
-    
-    # Update temp variables for next iteration 
-    temp_p = var.p_is.copy() 
-    temp_T = var.T.copy()
 
-    # Delta 값 계산
-    # delta_pi = {country: {industry: var.pi[country][industry] - temp_pi[country][industry] for industry in var.industries} for country in var.countries}
-    # delta_p = {i: {j: {industry: var.p_is[i][j][industry] - temp_p[i][j][industry] for industry in var.industries} for j in var.countries if i != j} for i in var.countries}
-    # delta_T = {i: {j: {industry: var.T[i][j][industry] - temp_T[i][j][industry] for industry in var.industries} for j in var.countries if i != j} for i in var.countries}
+    #Delta 값 계산
+    delta_pi = {country: {industry: var.pi[country][industry] - temp_pi[country][industry] for industry in var.industries} for country in var.countries}
+    delta_p = {i: {j: {industry: var.p_ijs[i][j][industry] - temp_p[i][j][industry] for industry in var.industries} for j in var.countries if i != j} for i in var.countries}
+    delta_T = {i: {j: {industry: var.T[i][j][industry] - temp_T[i][j][industry] for industry in var.industries} for j in var.countries if i != j} for i in var.countries}
 
     # Call welfare_change with updated delta values
-    # welfare_change(var.T, var.x, delta_p, var.p_is, var.pi, var.t, delta_pi, delta_T)
+    # welfare_change(var.T, var.x, delta_p, var.p_ijs, var.pi, var.t, delta_pi, delta_T)
     # print("welfare change: ")
-    # print(welfare_change(var.T, var.x, delta_p, var.p_is, var.pi, var.t, delta_pi, delta_T))
+    # print(welfare_change(var.T, var.x, delta_p, var.p_ijs, var.pi, var.t, delta_pi, delta_T))
     # print("\n")
 
 # Print the final Nash tariffs and corresponding t values
@@ -385,9 +420,6 @@ for iter in range(iteration):
     # Recalculate gamma, var.pi, and alpha with new tau values
     update_hats(var.tau, var.t, var.pi)
 
-print(welfare_history)
-# # Plot and save the tariff history for each combination of exporter, importer, and industry
-# iterations = list(range(1, iteration+2))
 iter_list = list(range(1,iteration+1))
 for exporter in var.countries:
     for importer in var.countries:
@@ -441,6 +473,6 @@ for exporter in var.countries:
 
 # # 임시 딕셔너리 생성
 # temp_pi = var.pi.copy()
-# temp_p = var.p_is.copy()
+# temp_p = var.p_ijs.copy()
 # temp_t = var.t.copy()
 # temp_T = var.T.copy()

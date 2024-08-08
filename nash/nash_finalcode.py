@@ -216,7 +216,7 @@ def cal_p_js(country, industry):
     sum = 0
     for c in var.countries:
         if c == country: continue
-        sum += var.p_is[c][country][industry]
+        sum += var.p_ijs[c][country][industry]
     return sum
 
 def cal_delta_p_is(country, industry):
@@ -230,7 +230,7 @@ def cal_p_is(country, industry):
     sum = 0
     for c in var.countries:
         if c == country: continue
-        sum += var.p_is[country][c][industry]
+        sum += var.p_ijs[country][c][industry]
     return sum
 
 def welfare_change(T, X, delta_p, p, pi, t, delta_pi, delta_T):
@@ -348,18 +348,18 @@ for iter in range(iteration):
     update_hats(var.tau, var.t, var.pi)
     
     # Update temp variables for next iteration 
-    temp_p = var.p_is.copy() 
+    temp_p = var.p_ijs.copy() 
     temp_T = var.T.copy()
 
     # Delta 값 계산
     # delta_pi = {country: {industry: var.pi[country][industry] - temp_pi[country][industry] for industry in var.industries} for country in var.countries}
-    # delta_p = {i: {j: {industry: var.p_is[i][j][industry] - temp_p[i][j][industry] for industry in var.industries} for j in var.countries if i != j} for i in var.countries}
+    # delta_p = {i: {j: {industry: var.p_ijs[i][j][industry] - temp_p[i][j][industry] for industry in var.industries} for j in var.countries if i != j} for i in var.countries}
     # delta_T = {i: {j: {industry: var.T[i][j][industry] - temp_T[i][j][industry] for industry in var.industries} for j in var.countries if i != j} for i in var.countries}
 
     # Call welfare_change with updated delta values
-    # welfare_change(var.T, var.x, delta_p, var.p_is, var.pi, var.t, delta_pi, delta_T)
+    # welfare_change(var.T, var.x, delta_p, var.p_ijs, var.pi, var.t, delta_pi, delta_T)
     # print("welfare change: ")
-    # print(welfare_change(var.T, var.x, delta_p, var.p_is, var.pi, var.t, delta_pi, delta_T))
+    # print(welfare_change(var.T, var.x, delta_p, var.p_ijs, var.pi, var.t, delta_pi, delta_T))
     # print("\n")
 
 # Print the final Nash tariffs and corresponding t values
@@ -441,6 +441,6 @@ for exporter in var.countries:
 
 # # 임시 딕셔너리 생성
 # temp_pi = var.pi.copy()
-# temp_p = var.p_is.copy()
+# temp_p = var.p_ijs.copy()
 # temp_t = var.t.copy()
 # temp_T = var.T.copy()
