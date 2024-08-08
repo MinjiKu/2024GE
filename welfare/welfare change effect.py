@@ -16,6 +16,11 @@ from scipy.optimize import minimize
 import pandas as pd
 import welfare
 import matplotlib.pyplot as plt
+from matplotlib import rcParams
+
+# Times New Roman 폰트를 사용하도록 설정
+rcParams['font.family'] = 'serif'
+rcParams['font.serif'] = ['Times New Roman'] + rcParams['font.serif']
 
 var.fill_gamma()
 var.fill_pi()
@@ -54,6 +59,7 @@ def gov_obj(tau_js, j):
         total += var.pol_econ[j][s] * calc_welfare(j, s)
     #print("total: ")
     #print(total)
+
     return -total  # We minimize, so we return the negative
 
 # Constraint 1 for country j and industry s
@@ -166,14 +172,18 @@ def constraints(tau_js, j):
 
 
 # Function to generate tariff matrix
-def generate_tariff_matrix():
+def generate_tariff_matrix(cname):
     # Create an array of tariffs (excluding the home country)
     # Tariffs for each industry (rows) and country (columns, excluding the home country)
     tariff_values = np.random.rand(var.num_industries, var.num_countries - 1) * 0.5 + 1.0
+    # tariff_values = var.tau[cname]
     return tariff_values
 
 def flatten(matrix):
     return [item for sublist in matrix for item in sublist]
+# def flatten(matrix):
+#     # Flatten the matrix and filter out non-numerical values
+#     return [item for sublist in matrix for item in sublist if isinstance(item, (int, float))]
 
 def flatten_dict(dict_matrix):
     """
@@ -186,7 +196,7 @@ def flatten_dict(dict_matrix):
     return flat_list
 
 # Generate an array of 5 tariff matrices
-tariff_matrices = [generate_tariff_matrix() for _ in range(5)]   
+tariff_matrices = [generate_tariff_matrix(name) for k, name in enumerate(var.countries)]   
 flat_matrices = [flatten(tariff_matrices[i]) for i in range(5)]
 
 def cal_x_j(country):
@@ -257,6 +267,7 @@ def welfare_change(T, X, delta_p, p, pi, t, delta_pi, delta_T):
 # Initialize a dictionary to store tariff values for each iteration
 tariff_history = {i: {j: {industry: [] for industry in var.industries} for j in var.countries if j != i} for i in var.countries}
 welfare_history = {i: {j: {industry: [] for industry in var.industries} for j in var.countries if j != i} for i in var.countries}
+
 # Ensure the directory exists
 output_dir = "nash_img"
 os.makedirs(output_dir, exist_ok=True)
@@ -281,31 +292,27 @@ def calculate_optimum_tariffs(exporter_name):
 
     # 각 국가에 대해 고유의 관세율 매트릭스를 사용하도록 수정
     optimal_taus = {j: {industry: 0 for industry in var.industries} for j in var.countries if j != exporter_name}
-    gov_obj_values = {j: {industry: 0 for industry in var.industries} for j in var.countries if j != exporter_name} # To store gov_obj values for each importer
+    gov_obj_values = {j: {industry: 0 for industry in var.industries} for j in var.countries if j != exporter_name} 
     
-    # exporter_name에 대한 인덱스를 가져옵니다.
-    exporter_idx = var.countries.index(exporter_name)
+    #exporter_idx = var.countries.index(exporter_name)
     idx = 0
     for j, importer in enumerate(var.countries):
         if importer == exporter_name:
             continue
         # flat_matrix는 실제로는 exporter_idx에 해당하는 데이터를 가져와야 합니다.
         flat_matrix = flatten_dict({j: {s: var.tau[exporter_name][j][s] for s in var.industries} for j in var.countries if j != exporter_name})
-        # 디버깅 출력
+        
         result = minimize(gov_obj, flat_matrix, args=(importer,), constraints=constraints(flat_matrix, importer))
         
         line_idx = 0
         for industry in var.industries:
             optimal_taus[importer][industry] = result.x[line_idx * (var.num_countries - 1) + idx]
             gov_obj_values[importer][industry] = -result.fun
+            line_idx += 1
 
         #gov_obj_values[importer] = -result.fun  # Store the minimized value of gov_obj
         idx += 1
     
-    # 업데이트 후 gamma를 다시 계산합니다.
-    #var.tau[exporter_name] = optimal_taus
-
-
     return optimal_taus, gov_obj_values
 
 
@@ -333,7 +340,10 @@ for iter in range(iteration):
                     welfare_history[i][j][industry].append(gov_obj_values[i][j][industry])
                     new_t = var.tau[i][j][industry] - 1
                     var.t[i][j][industry] = max(new_t, 1e-10)  # Ensure t is not below 1e-10
+    
     var.fill_gamma()
+    var.fill_alpha()
+
     # Recalculate gamma, var.pi, and alpha with new tau values
     update_hats(var.tau, var.t, var.pi)
     
@@ -375,7 +385,7 @@ for iter in range(iteration):
     # Recalculate gamma, var.pi, and alpha with new tau values
     update_hats(var.tau, var.t, var.pi)
 
-# print(welfare_history)
+print(welfare_history)
 # # Plot and save the tariff history for each combination of exporter, importer, and industry
 # iterations = list(range(1, iteration+2))
 iter_list = list(range(1,iteration+1))
@@ -386,8 +396,8 @@ for exporter in var.countries:
                 tariffs = tariff_history[exporter][importer][industry]
 
                 plt.figure(figsize=(10, 6))
-                plt.plot(iter_list, tariffs, marker='o', color='r')
-                #plt.ylim([1.0, 1.5])
+                plt.plot(iter_list, tariffs, marker='o', color='#bb0a1e', linewidth = 2)
+                plt.ylim([1.0, 1.5])
 
                 for i, txt in enumerate(tariffs):
                     if i == 0 or txt != tariffs[i-1]:  # 첫 포인트이거나, 앞의 값과 다를 때만 표시
@@ -403,30 +413,32 @@ for exporter in var.countries:
                 plt.savefig(file_name)
                 plt.close()
 
-
 for exporter in var.countries:
     for importer in var.countries:
         if exporter != importer:
-            for industry in var.industries:
-                ws = welfare_history[exporter][importer][industry]
+            welfares = welfare_history[exporter][importer][industry]
 
-                plt.figure(figsize=(10, 6))
-                plt.plot(iter_list, ws, marker='o', color='r')
-                #plt.ylim([1.0, 1.5])
+            plt.figure(figsize=(10, 6))
+            plt.plot(iter_list, welfares, marker='o', color='#bb0a1e', linewidth = 2)
+            #plt.ylim([1.0, 1.5])
+            plt.grid(True, linestyle='--', alpha=0.7)
 
-                for i, txt in enumerate(ws):
-                    if i == 0 or txt != ws[i-1]:  # 첫 포인트이거나, 앞의 값과 다를 때만 표시
-                        plt.annotate(f'{txt:.2f}', (iter_list[i], ws[i]), textcoords="offset points", xytext=(0,10), ha='center')
 
-                plt.title(f'Welfare for {importer} in Repeated Game')
-                plt.xlabel('Iteration')
-                plt.ylabel('W')
-                plt.grid(True)
-                
-                # Save the plot
-                file_name = f"{output_dir}/Welfare_{importer}.png"
-                plt.savefig(file_name)
-                plt.close()
+            for i, txt in enumerate(welfares):
+                if i == 0 or txt != welfares[i-1]:  # 첫 포인트이거나, 앞의 값과 다를 때만 표시
+                    plt.annotate(f'{txt:.1f}', (iter_list[i], welfares[i]), textcoords="offset points", xytext=(0,10), ha='center')
+
+            plt.title(f'Welfare for {importer} in Repeated Game')
+            plt.xlabel('Reapeated Game')
+            plt.ylabel('Welfare')
+            plt.grid(True)
+            
+            # Save the plot
+            file_name = f"{output_dir}/welfare_{importer}.png" #같다는 것을 확인했으면 제목 수정하기
+            plt.savefig(file_name)
+            plt.close()
+
+
 # # 임시 딕셔너리 생성
 # temp_pi = var.pi.copy()
 # temp_p = var.p_is.copy()
