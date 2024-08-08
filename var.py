@@ -20,6 +20,11 @@ for country in countries:
 
 # x = {country: {industry: np.random.rand() for industry in industries} for country in countries}
 
+def coop_lambda():
+    # Loop through each country and set the industry values to 1
+    for country in countries:
+        pol_econ[country] = {industry: 1 for industry in industries}
+
 x = { #우선 김은 임의로 100으로 채움
          #단위는 billion USD
     'Korea':{'steel':65.85, 'semi':19.8, 'car':188.856},
