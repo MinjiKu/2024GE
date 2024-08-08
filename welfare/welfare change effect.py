@@ -282,8 +282,8 @@ def calculate_optimum_tariffs(exporter_name):
     
     return optimal_taus, gov_obj_values
 
-def calculate_p_is(p_ijs):
-    p_is = {i: {s: 0 for s in var.industries} for i in var.countries}
+def calculate_p_js(p_ijs):
+    p_js = {i: {s: 0 for s in var.industries} for i in var.countries}
     
     for i in var.countries:
         for s in var.industries:
@@ -291,12 +291,12 @@ def calculate_p_is(p_ijs):
             for j in var.countries:
                 if j != i:
                     max_value = max(max_value, p_ijs[i][j][s])
-            p_is[i][s] = max_value
+            p_js[i][s] = max_value
     
-    return p_is
+    return p_js
 
-def calculate_p_js(p_ijs):
-    p_js = {j: {s: float('inf') for s in var.industries} for j in var.countries}
+def calculate_p_is(p_ijs):
+    p_is = {j: {s: float('inf') for s in var.industries} for j in var.countries}
     
     for j in var.countries:
         for s in var.industries:
@@ -304,9 +304,9 @@ def calculate_p_js(p_ijs):
             for i in var.countries:
                 if i != j:
                     min_value = min(min_value, p_ijs[i][j][s])
-            p_js[j][s] = min_value
+            p_is[j][s] = min_value
     
-    return p_js
+    return p_is
 
 
 iteration = 20
@@ -359,7 +359,7 @@ for iter in range(iteration):
     #Delta 값 계산
     changerate_pi = {country: {industry: (var.pi[country][industry] - temp_pi[country][industry])/temp_pi[country][industry] for industry in var.industries} for country in var.countries}
     changerate_p_is = {i: {industry: (p_is[i][industry] - temp_p_is[i][industry])/ temp_p_is[i][industry] for industry in var.industries} for i in var.countries}
-    changerate_p_js = {j: {industry: (p_is[j][industry] - temp_p_js[j][industry])/temp_p_js[j][industry] for industry in var.industries} for j in var.countries}
+    changerate_p_js = {j: {industry: (p_js[j][industry] - temp_p_js[j][industry])/temp_p_js[j][industry] for industry in var.industries} for j in var.countries}
     changerate_T = {i: {j: {industry: (var.T[i][j][industry] - temp_T[i][j][industry])/temp_T[i][j][industry] for industry in var.industries} for j in var.countries if i != j} for i in var.countries}
 
     # Call welfare_change with updated delta values
