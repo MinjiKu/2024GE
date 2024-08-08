@@ -29,7 +29,7 @@ pip install pandas
 
 ### Model
 
-* 4 industries, 5 countries
+* ~~4~~ 3 industries, 5 countries
   * ~~seaweed~~, steel, car, semiconductor 
   * Korea, USA, China, Japan, Germany
     * Chose industries where Korea has market power
