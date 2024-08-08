@@ -57,9 +57,9 @@ def gov_obj(tau_js, j):
     total = 0
     for s in var.industries:
         total += var.pol_econ[j][s] * calc_welfare(j, s)
-    #print("total: ")
-    #print(total)
-
+    # print("gov_obj total: ")
+    # print(total)
+    return np.random.rand()
     return -total  # We minimize, so we return the negative
 
 # Constraint 1 for country j and industry s
@@ -155,12 +155,12 @@ def constraints(tau_js, j):
     
     cons = []
     
-    # Constraint 1: eq_12
-    for s in var.industries:
-        cons.append({'type': 'eq', 'fun': lambda tau_js, j=j, s=s: eq_12(j, s)})
+    # # Constraint 1: eq_12
+    # for s in var.industries:
+    #     cons.append({'type': 'eq', 'fun': lambda tau_js, j=j, s=s: eq_12(j, s)})
     
-    # Constraint 2: eq_13
-    cons.append({'type': 'eq', 'fun': lambda tau_js, j=j: eq_13(j)})
+    # # Constraint 2: eq_13
+    # cons.append({'type': 'eq', 'fun': lambda tau_js, j=j: eq_13(j)})
     
     # Constraint 3: eq_10 for each country i and industry s
     for i in var.countries:
@@ -311,6 +311,8 @@ def calculate_optimum_tariffs(exporter_name):
             idx += 1
         count_idx += 1
     
+    # print("result = gov_obj: ")
+    # print(result)
     return optimal_taus, gov_obj_values
 
 
