@@ -6,14 +6,14 @@ We focus on empirical analysis of South Korean economic policy direction amidst 
 
 ### Trade Wars and Trade Talks with Data
 * American Economic Reviews
-* Ralph Ossa, WTO Chief Economist
+* Ralph Ossa, WTO Chief Economist <br>
 Empirical analysis of noncooperative and cooperative trade policy. <br>
 A unified framework which nests traditional, new trade, and political economy motives for protection <br>
 Can provide immediate trade policy relevance / Suggest and provide plausibility for trade policy making <br>
 
 ### Optimum Tariffs and Retaliation
 * The Review of Economic Studies, Oxford University Press
-* Harry G. Johnson
+* Harry G. Johnson <br>
 Theoretical Analysis <br>
 Proof that country may gain by imposing a tariff, even if other countries retaliate <br>
 Determine the condition under which it will gain in one special case <br>
