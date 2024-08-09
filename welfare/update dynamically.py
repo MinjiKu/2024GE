@@ -21,18 +21,16 @@ from matplotlib import rcParams
 rcParams['font.family'] = 'serif'
 rcParams['font.serif'] = ['Times New Roman'] + rcParams['font.serif']
 
-var.fill_gamma()
-var.fill_pi()
+# var.fill_gamma()
+# var.fill_pi()
 factual_pi = var.pi.copy() #factual var.pi 보존
 
-var.fill_alpha()
+# var.fill_alpha()
 def update_economic_variables(tau, j):
     # Update t based on the new tau values
     for i in tau.keys():
             if i==j: continue
             for industry in var.industries:
-                    # print("print t for", i, j, industry, ":", var.t[i][j][industry])
-                    # print("print tau for", i, j, industry, ":",tau[i][j][industry])
                     var.t[i][j][industry] = max(tau[i][j][industry] - 100, 1e-10)
 
     # Recalculate gamma, pi, and alpha based on the updated t values
@@ -47,7 +45,7 @@ def update_economic_variables(tau, j):
                 for industry in var.industries:
                     change_rate = (var.tau[i][j][industry] - previous_tau[i][j][industry]) / previous_tau[i][j][industry] if previous_tau[i][j][industry] != 0 else 0
                     var.p_ijs[i][j][industry] *= (1 + change_rate)
-                    var.T[i][j][industry] *= (1 + change_rate * var.de[industry])
+                    var.T[i][j][industry] *= (1 - change_rate * var.de[industry])
 def calc_x(j, s):
     sum = 0
     TR = 0
@@ -70,8 +68,6 @@ def gov_obj(tau, j):
     total = 0
     for s in var.industries:
         total += var.pol_econ[j][s] * calc_welfare(j, s)
-
-    #print("total (gov_obj) for",j, iter ,":",total)
 
     return -total  # We minimize, so we return the negative
 
@@ -202,10 +198,9 @@ def welfare_change():
         term2 = 0
         term3 = 0
         
-        for i in var.countries:  # i국 (수출국)
+        for i in var.countries:
             if i != j:
-                for s in var.industries:  # s산업
-                    #print(f'{j}{cal_x_j(j)}')
+                for s in var.industries: 
                     term1 += (var.T[i][j][s] / x_j_list[j]) * (changerate_p_js[j][s] - changerate_p_js[i][s])
                     term3 += (var.t[i][j][s] * var.T[i][j][s] / x_j_list[j]) * (changerate_T[i][j][s]-changerate_p_is[i][s])
         
@@ -236,44 +231,6 @@ def update_hats(tau, t, pi): #갱신된 값이 인자로 들어감
     for j in var.countries:
         for s in var.industries:
             var.pi_hat[j][s] = abs(var.pi[j][s] / factual_pi[j][s])
-
-
-# def calculate_optimum_tariffs():
-#     global tau, t, tariff_matrices
-
-#     # Initialize dictionaries for storing results
-#     optimal_taus = {i: {j: {industry: var.tau[i][j][industry] for industry in var.industries} for j in var.countries if j != i} for i in var.countries}
-#     gov_obj_values = {i: {j: {industry: 0 for industry in var.industries} for j in var.countries if j != i} for i in var.countries}
-
-#     # Flatten the tau structure to create an initial guess for the optimizer
-#     initial_tau = flatten_dict(optimal_taus)
-
-#     # Define the global objective function that operates on the entire tau structure
-#     def global_gov_obj(flat_tau):
-#         total_obj = 0
-#         unflattened_tau = unflatten_dict(flat_tau)  # This reconstructs the tau structure
-#         update_economic_variables(unflattened_tau)  # Update t, T, pi, etc. based on the new tau
-        
-#         for importer in var.countries:
-#             total_obj += gov_obj(unflattened_tau, importer)
-#         return total_obj
-
-#     # Generate global constraints for all countries and industries
-#     global_constraints = global_constraints_generator(initial_tau)
-
-#     # Perform global minimization across all countries and industries
-#     result = minimize(global_gov_obj, initial_tau) #constraints=global_constraints
-    
-#     # Map the results back into the optimal_taus structure
-#     unflattened_result_tau = unflatten_dict(result.x)
-#     for i in var.countries:
-#         for j in var.countries:
-#             if i != j:
-#                 for industry in var.industries:
-#                     optimal_taus[i][j][industry] = unflattened_result_tau[i][j][industry]
-#                     gov_obj_values[i][j][industry] = -result.fun
-    
-#     return optimal_taus, gov_obj_values
 
 
 def calculate_p_js(p_ijs):
@@ -323,9 +280,16 @@ def optimize_for_importer(j):
     result = minimize(
         importer_gov_obj,          # Local objective function
         initial_tau,               # Initial guess for tau
-        #constraints=global_constraints_generator(initial_tau)  # Constraints
+        method='L-BFGS-B',         # Optimization method
+        tol=1e-12,                 # Tolerance for termination (set very small to ensure high precision)
+        options={
+            'disp': True,         # Display convergence messages
+            'maxiter': 10000,     # Maximum number of iterations (set high if necessary)
+            'ftol': 1e-12,        # Precision goal for the value of the function being optimized
+            'gtol': 1e-12,        # Precision goal for the gradient of the function being optimized
+        }
     )
-    
+
     # Map the results back to the original tau structure
     optimized_tau = unflatten_dict(result.x, j)
     optimized_g = -result.fun
@@ -338,7 +302,8 @@ def optimize_for_importer(j):
 
 tariff_history = {i: {j: {industry: [] for industry in var.industries} for j in var.countries if j != i} for i in var.countries}
 welfare_history = {j: [] for j in var.countries} 
-iteration = 5
+
+iteration = 50
 # Perform 100 iterations
 for iter in range(iteration):
     print(f"Iteration {iter + 1}")
@@ -357,7 +322,7 @@ for iter in range(iteration):
             if i != j:
                 for s in var.industries:
                     var.tau[i][j][s] = optimized_tau[i][j][s]
-                    tariff_history[i][j][s].append(optimized_tau[i][j][s]) 
+                    tariff_history[i][j][s].append(max(optimized_tau[i][j][s], 1e-10)) 
     
     print(f"tariff history after {iter+1} optimization: ", tariff_history)
     print(f"welfare history after {iter+1} optimization: ", welfare_history)
@@ -389,10 +354,8 @@ for iter in range(iteration):
     changerate_p_is = {i: {industry: (p_is[i][industry] - temp_p_is[i][industry])/ temp_p_is[i][industry] for industry in var.industries} for i in var.countries}
     changerate_p_js = {j: {industry: (p_js[j][industry] - temp_p_js[j][industry])/temp_p_js[j][industry] for industry in var.industries} for j in var.countries}
     changerate_T = {i: {j: {industry: (var.T[i][j][industry] - temp_T[i][j][industry])/temp_T[i][j][industry] for industry in var.industries} for j in var.countries if i != j} for i in var.countries}
-
-    # Call welfare_change with updated delta values
+        # Call welfare_change with updated delta values
     print("welfare change effect of iteration", (iter+1), welfare_change())
-    
     print("\nCorresponding t values:")
     for i in var.countries:
         print(f"\nt values for {i} as the home country:")
@@ -406,7 +369,6 @@ for iter in range(iteration):
         df_tau = pd.DataFrame({j: {s: var.tau[i][j][s] for s in var.industries} for j in var.countries if j != i})
         print(df_tau)
 
-iter_list = list(range(1,iteration+1))
 iter_list = list(range(1, iteration + 1))
 for exporter in var.countries:
     for importer in var.countries:
@@ -414,27 +376,52 @@ for exporter in var.countries:
             for industry in var.industries:
                 tariffs = tariff_history[exporter][importer][industry]
 
-                # Calculate the logarithm of the tariff values to highlight small changes
-                log_tariffs = np.log(tariffs)
+                # Calculate the differences between consecutive tariffs
+                tariff_diffs = np.diff(tariffs)
+
+                # Optional: amplify the differences
+                amplified_diffs = tariff_diffs * 1e6
 
                 plt.figure(figsize=(10, 6))
-                plt.plot(iter_list, log_tariffs, marker='o', color='#bb0a1e', linewidth=2)
-                plt.ylim([np.min(log_tariffs) - 0.1, np.max(log_tariffs) + 0.1])
-
-                for i, txt in enumerate(log_tariffs):
-                    if i == 0 or txt != log_tariffs[i - 1]:  # 첫 포인트이거나, 앞의 값과 다를 때만 표시
-                        plt.annotate(f'{np.exp(txt):.2f}', (iter_list[i], txt), textcoords="offset points", xytext=(0, 10), ha='center')
-
-                plt.title(f'Logarithm of Tariff for "{industry}" from {exporter} to {importer} in Repeated Game')
+                plt.plot(iter_list[1:], amplified_diffs, marker='o', color='#bb0a1e', linewidth=2)
+                
+                # Optional: set the y-limits manually to zoom in
+                plt.ylim([np.min(amplified_diffs) - 0.01, np.max(amplified_diffs) + 0.01])
+                
+                plt.title(f'Change in Tariff for "{industry}" from {exporter} to {importer} in Repeated Game')
                 plt.xlabel('Iteration')
-                plt.ylabel('Log(Tariff)')
+                plt.ylabel('Amplified Change in Tariff')
                 plt.grid(True)
 
                 # Save the plot
-                file_name = f"{output_dir}/log_tariff_{industry}_{exporter}_to_{importer}.png"
+                file_name = f"{output_dir}/change_tariff_{industry}_{exporter}_to_{importer}.png"
                 plt.savefig(file_name)
                 plt.close()
 
+for exporter in var.countries:
+    for importer in var.countries:
+        if exporter != importer:
+            for industry in var.industries:
+                tariffs = tariff_history[exporter][importer][industry]
+
+                # Calculate the percentage change between consecutive tariffs
+                tariff_changes = np.diff(tariffs) / tariffs[:-1] * 100
+
+                plt.figure(figsize=(10, 6))
+                plt.plot(iter_list[1:], tariff_changes, marker='o', color='#bb0a1e', linewidth=2)
+
+                # Optional: set the y-limits manually to zoom in
+                plt.ylim([np.min(tariff_changes) - 0.01, np.max(tariff_changes) + 0.01])
+
+                plt.title(f'Change Rate in Tariff for "{industry}" from {exporter} to {importer} in Repeated Game')
+                plt.xlabel('Iteration')
+                plt.ylabel('Change Rate in Tariff (%)')
+                plt.grid(True)
+
+                # Save the plot
+                file_name = f"{output_dir}/change_rate_tariff_{industry}_{exporter}_to_{importer}.png"
+                plt.savefig(file_name)
+                plt.close()
 
 for importer in var.countries:
     welfares = welfare_history[importer]
@@ -445,9 +432,9 @@ for importer in var.countries:
     plt.grid(True, linestyle='--', alpha=0.7)
 
 
-    for i, txt in enumerate(welfares):
-        if i == 0 or txt != welfares[i-1]:  # 첫 포인트이거나, 앞의 값과 다를 때만 표시
-            plt.annotate(f'{txt:.1f}', (iter_list[i], welfares[i]), textcoords="offset points", xytext=(0,10), ha='center')
+    # for i, txt in enumerate(welfares):
+    #     if i == 0 or txt != welfares[i-1]:  # 첫 포인트이거나, 앞의 값과 다를 때만 표시
+    #         plt.annotate(f'{txt:.1f}', (iter_list[i], welfares[i]), textcoords="offset points", xytext=(0,10), ha='center')
 
     plt.title(f'Welfare for {importer} in Repeated Game')
     plt.xlabel('Reapeated Game')
@@ -458,3 +445,29 @@ for importer in var.countries:
     file_name = f"{output_dir}/welfare_{importer}.png"
     plt.savefig(file_name)
     plt.close()
+
+for importer in var.countries:
+    welfares = welfare_history[importer]
+
+    # Calculate the percentage changes between consecutive welfare values
+    percentage_changes = [(welfares[i] - welfares[i-1]) / welfares[i-1] * 100 for i in range(1, len(welfares))]
+
+    plt.figure(figsize=(10, 6))
+    plt.plot(iter_list[1:], percentage_changes, marker='o', color='#bb0a1e', linewidth=2)
+    plt.grid(True, linestyle='--', alpha=0.7)
+
+    # Annotate the plot with the percentage change values
+    for i, txt in enumerate(percentage_changes):
+        plt.annotate(f'{txt:.2f}%', (iter_list[i+1], percentage_changes[i]), textcoords="offset points", xytext=(0,10), ha='center')
+
+    plt.title(f'Welfare Change Rate for {importer} in Repeated Game')
+    plt.xlabel('Iteration')
+    plt.ylabel('Percentage Change in Welfare')
+    plt.grid(True)
+    
+    # Save the plot
+    file_name = f"{output_dir}/welfare_change_rate_{importer}.png"
+    plt.savefig(file_name)
+    plt.close()
+
+#%%

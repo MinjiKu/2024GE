@@ -197,17 +197,17 @@ L_j = {'Korea':29.5, 'USA':171, 'China':780, 'Japan':69.3, 'Germany':44.4} #mill
 #demand elasticity
 de = {'steel':0.5, 'semi':0.5, 'car':1.5}
 
-gamma_denom = {j: {industry: 0 for industry in industries} for j in countries}
+gamma_denom = {j: {industry: 1e-5 for industry in industries} for j in countries}
 
 def fill_gamma_denom():
     for j in countries:
         for s in industries:
-            # gamma_denom[j][s] = 0
+            gamma_denom[j][s] = 0
             for m in countries:
                 if m != j:
                     gamma_denom[j][s] += tau[m][j][s] * T[m][j][s]
+                    
                 
-
 def fill_gamma():
     fill_gamma_denom()
     for i in countries:
@@ -225,33 +225,43 @@ fill_gamma()
 # print("gamma_denom: ")
 # print(gamma_denom)
 # print("\n")
-
+pi = {country: {industry: 0 for industry in industries} for country in countries}
 def fill_pi():
     for j in countries:
         for s in industries:
+            pi[j][s]=0
             for i in countries:
                 if i != j:
                     pi_value = 1 / sigma[s] * T[i][j][s]
                     pi[j][s] += max(pi_value, epsilon)
+                    #print(f"pi[{j}][{s}] after fill = {pi[j][s]}")
 fill_pi()
 factual_pi = pi.copy() #factual pi 보존
 
-alpha_denom = {j: {industry: 0 for industry in industries} for j in countries}
+# Reset alpha and alpha_denom before filling them
+alpha = {i: {j: {industry: 0 for industry in industries} for j in countries if i != j} for i in countries}
+alpha_denom = {i: {industry: 0 for industry in industries} for i in countries}
 
 def fill_alpha_denom():
+    # Reset alpha_denom at the start
     for i in countries:
         for s in industries:
+            alpha_denom[i][s] = 0
             for n in countries:
                 if i != n:
-                    alpha_denom[i][s] += T[i][n][s]            
+                    alpha_denom[i][s] += T[i][n][s]  # Accumulate trade volumes
 
 def fill_alpha():
-    fill_alpha_denom()
+    fill_alpha_denom()  # Ensure alpha_denom is correctly filled before using it
+    # Reset alpha at the start
     for i in countries:
         for j in countries:
             if i == j:
                 continue  # Skip the case where i == j
             for s in industries:
+                if alpha_denom[i][s] == 0:
+                    print(f"Warning: alpha_denom[{i}][{s}] is zero, skipping division.")
+                    continue  # Skip this iteration if the denominator is zero
                 alpha_value = T[i][j][s] / alpha_denom[i][s]
                 alpha[i][j][s] = max(alpha_value, epsilon)  # Ensure no zero values
 
