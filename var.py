@@ -229,7 +229,6 @@ pi = {country: {industry: 0 for industry in industries} for country in countries
 def fill_pi():
     for j in countries:
         for s in industries:
-            pi[j][s]=0
             for i in countries:
                 if i != j:
                     pi_value = 1 / sigma[s] * T[i][j][s]

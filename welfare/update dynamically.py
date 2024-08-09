@@ -21,8 +21,8 @@ from matplotlib import rcParams
 rcParams['font.family'] = 'serif'
 rcParams['font.serif'] = ['Times New Roman'] + rcParams['font.serif']
 
-# var.fill_gamma()
-# var.fill_pi()
+var.fill_gamma()
+var.fill_pi()
 factual_pi = var.pi.copy() #factual var.pi 보존
 
 # var.fill_alpha()
@@ -230,8 +230,7 @@ def update_hats(tau, t, pi): #갱신된 값이 인자로 들어감
                     var.t_hat[i][j][s] = abs(t[i][j][s] / var.factual_t[i][j][s])
     for j in var.countries:
         for s in var.industries:
-            var.pi_hat[j][s] = abs(var.pi[j][s] / factual_pi[j][s])
-
+            var.pi_hat[j][s] = abs(pi[j][s] / factual_pi[j][s])
 
 def calculate_p_js(p_ijs):
     p_js = {i: {s: 1e-10 for s in var.industries} for i in var.countries}
@@ -292,12 +291,8 @@ def optimize_for_importer(j):
 
     # Map the results back to the original tau structure
     optimized_tau = unflatten_dict(result.x, j)
-    optimized_g = -result.fun
+    optimized_g = -(result.fun)
 
-    print("importer gov obj result\n",
-          "optimized_tau:", optimized_tau,
-          "\noptimized_g:", optimized_g)
-    
     return optimized_tau, optimized_g
 
 tariff_history = {i: {j: {industry: [] for industry in var.industries} for j in var.countries if j != i} for i in var.countries}
