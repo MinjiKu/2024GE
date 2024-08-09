@@ -31,9 +31,9 @@ def update_economic_variables(tau, j):
     for i in tau.keys():
             if i==j: continue
             for industry in var.industries:
-                    print("print t for", i, j, industry, ":", var.t[i][j][industry])
-                    print("print tau for", i, j, industry, ":",tau[i][j][industry])
-                    var.t[i][j][industry] = max(tau[i][j][industry] - 1, 1e-10)
+                    # print("print t for", i, j, industry, ":", var.t[i][j][industry])
+                    # print("print tau for", i, j, industry, ":",tau[i][j][industry])
+                    var.t[i][j][industry] = max(tau[i][j][industry] - 100, 1e-10)
 
     # Recalculate gamma, pi, and alpha based on the updated t values
     var.fill_gamma()
@@ -45,8 +45,7 @@ def update_economic_variables(tau, j):
         for j in var.countries:
             if i != j:
                 for industry in var.industries:
-                    previous_tau = var.factual_tau[i][j][industry]
-                    change_rate = (var.tau[i][j][industry] - previous_tau) / previous_tau if previous_tau != 0 else 0
+                    change_rate = (var.tau[i][j][industry] - previous_tau[i][j][industry]) / previous_tau[i][j][industry] if previous_tau[i][j][industry] != 0 else 0
                     var.p_ijs[i][j][industry] *= (1 + change_rate)
                     var.T[i][j][industry] *= (1 + change_rate * var.de[industry])
 def calc_x(j, s):
@@ -72,7 +71,7 @@ def gov_obj(tau, j):
     for s in var.industries:
         total += var.pol_econ[j][s] * calc_welfare(j, s)
 
-    print("total (gov_obj) for",j,iter,":",total)
+    #print("total (gov_obj) for",j, iter ,":",total)
 
     return -total  # We minimize, so we return the negative
 
@@ -217,9 +216,6 @@ def welfare_change():
     
     return delta_W_W
 
-# Initialize a dictionary to store tariff values for each iteration
-tariff_history = {i: {j: {industry: [] for industry in var.industries} for j in var.countries if j != i} for i in var.countries}
-welfare_history = {i: {j: {industry: [] for industry in var.industries} for j in var.countries if j != i} for i in var.countries}
 p_is = {i: {s: 0 for s in var.industries} for i in var.countries}
 p_js = {j: {s: float('inf') for s in var.industries} for j in var.countries}
 
@@ -315,7 +311,7 @@ def optimize_for_importer(j):
         i: {s: var.tau[i][j][s] for s in var.industries}
         for i in var.countries if i != j
     })
-    print("initial_tau for ",j, initial_tau)
+    #print("initial_tau for ",j, initial_tau)
     
     # Define the local objective function for the importer
     def importer_gov_obj(flat_tau):
@@ -333,49 +329,38 @@ def optimize_for_importer(j):
     # Map the results back to the original tau structure
     optimized_tau = unflatten_dict(result.x, j)
     optimized_g = -result.fun
+
+    print("importer gov obj result\n",
+          "optimized_tau:", optimized_tau,
+          "\noptimized_g:", optimized_g)
     
     return optimized_tau, optimized_g
 
-# def independent_optimization(j, var.tau):
-#     for iter in range(iteration):  # max_iterations: number of iterations you want to run
-#         print(f"Iteration {iter + 1}")
-
-#         for j in var.countries:
-#             print(f"Optimizing tariffs for imports into country: {j}")
-#             optimize_for_importer(j, var)
-        
-#         # You may want to include any additional code here that needs to run after each iteration
-
-#     return var.tau
-
-iteration = 20
+tariff_history = {i: {j: {industry: [] for industry in var.industries} for j in var.countries if j != i} for i in var.countries}
+welfare_history = {j: [] for j in var.countries} 
+iteration = 5
 # Perform 100 iterations
 for iter in range(iteration):
     print(f"Iteration {iter + 1}")
     print(var.tau)
-    # Initialize history trackers if necessary
-    tariff_history = {i: {j: {industry: [] for industry in var.industries} for j in var.countries if j != i} for i in var.countries}
-    welfare_history = {j: [] for j in var.countries} 
-    
+
+    previous_tau = var.tau.copy()
     # Iterate over each importing country and optimize
     for j in var.countries:
         print(f"Optimizing tariffs for imports into country: {j}")
-        optimized_tau, optimized_g = optimize_for_importer(j)  # This updates var.tau for the specific importer j
+        optimized_tau, optimized_g = optimize_for_importer(j)
+
+        #print(f"Welfare for {j} after optimization: {optimized_g}")
+        welfare_history[j].append(optimized_g)
+        #print(f"print welfare history for {j}: {welfare_history[j]}")
         for i in var.countries:
             if i != j:
                 for s in var.industries:
                     var.tau[i][j][s] = optimized_tau[i][j][s]
-
-    for i in var.countries:
-        if i != j:
-            for industry in var.industries:
-                welfare_history[j].append(optimized_g)  # Append the welfare value
+                    tariff_history[i][j][s].append(optimized_tau[i][j][s]) 
     
-    for i in var.countries:
-        if i != j:
-            for industry in var.industries:
-                tariff_history[i][j][industry].append(optimized_tau[i][j][industry])  # Append the welfare value
-
+    print(f"tariff history after {iter+1} optimization: ", tariff_history)
+    print(f"welfare history after {iter+1} optimization: ", tariff_history)
     # Store the current state of the economic variables
     temp_p = var.p_ijs.copy() 
     temp_T = var.T.copy()
@@ -386,14 +371,6 @@ for iter in range(iteration):
     # Update economic variables with the new tau after all optimizations
     update_economic_variables(var.tau, j)
 
-    # # Store tariff and welfare history after optimization
-    # for i in var.countries:
-    #     for j in var.countries:
-    #         if j != i:
-    #             for industry in var.industries:
-    #                 tariff_history[i][j][industry].append()  # Store the tariff value
-    #                 welfare_history[i][j][industry].append()
-    
     # Recalculate p_is and p_js after updating tau
     p_is = calculate_p_is(var.p_ijs)
     p_js = calculate_p_js(var.p_ijs)
@@ -416,13 +393,6 @@ for iter in range(iteration):
     # Call welfare_change with updated delta values
     print("welfare change effect of iteration", (iter+1), welfare_change())
     
-# Print the final Nash tariffs and corresponding t values
-    print("Nash Tariffs (tau):")
-    for i in var.countries:
-        print(f"\nTariffs for {i} as country_i:")
-        df_tau = pd.DataFrame({j: {s: var.tau[i][j][s] for s in var.industries} for j in var.countries if j != i})
-        print(df_tau)
-
     print("\nCorresponding t values:")
     for i in var.countries:
         print(f"\nt values for {i} as the home country:")
@@ -445,7 +415,7 @@ for exporter in var.countries:
 
                 plt.figure(figsize=(10, 6))
                 plt.plot(iter_list, tariffs, marker='o', color='#bb0a1e', linewidth = 2)
-                plt.ylim([1.0, 1.5])
+                #plt.ylim([1.0, 1.5])
 
                 for i, txt in enumerate(tariffs):
                     if i == 0 or txt != tariffs[i-1]:  # 첫 포인트이거나, 앞의 값과 다를 때만 표시
@@ -461,34 +431,25 @@ for exporter in var.countries:
                 plt.savefig(file_name)
                 plt.close()
 
-for exporter in var.countries:
-    for importer in var.countries:
-        if exporter != importer:
-            welfares = welfare_history[exporter][importer][industry]
+for improter in var.countries:
+    welfares = welfare_history[importer]
 
-            plt.figure(figsize=(10, 6))
-            plt.plot(iter_list, welfares, marker='o', color='#bb0a1e', linewidth = 2)
-            #plt.ylim([1.0, 1.5])
-            plt.grid(True, linestyle='--', alpha=0.7)
+    plt.figure(figsize=(10, 6))
+    plt.plot(iter_list, welfares, marker='o', color='#bb0a1e', linewidth = 2)
+    #plt.ylim([1.0, 1.5])
+    plt.grid(True, linestyle='--', alpha=0.7)
 
 
-            for i, txt in enumerate(welfares):
-                if i == 0 or txt != welfares[i-1]:  # 첫 포인트이거나, 앞의 값과 다를 때만 표시
-                    plt.annotate(f'{txt:.1f}', (iter_list[i], welfares[i]), textcoords="offset points", xytext=(0,10), ha='center')
+    for i, txt in enumerate(welfares):
+        if i == 0 or txt != welfares[i-1]:  # 첫 포인트이거나, 앞의 값과 다를 때만 표시
+            plt.annotate(f'{txt:.1f}', (iter_list[i], welfares[i]), textcoords="offset points", xytext=(0,10), ha='center')
 
-            plt.title(f'Welfare for {importer} in Repeated Game')
-            plt.xlabel('Reapeated Game')
-            plt.ylabel('Welfare')
-            plt.grid(True)
-            
-            # Save the plot
-            file_name = f"{output_dir}/welfare_{importer}.png" #같다는 것을 확인했으면 제목 수정하기
-            plt.savefig(file_name)
-            plt.close()
-
-
-# # 임시 딕셔너리 생성
-# temp_pi = var.pi.copy()
-# temp_p = var.p_ijs.copy()
-# temp_t = var.t.copy()
-# temp_T = var.T.copy()
+    plt.title(f'Welfare for {importer} in Repeated Game')
+    plt.xlabel('Reapeated Game')
+    plt.ylabel('Welfare')
+    plt.grid(True)
+    
+    # Save the plot
+    file_name = f"{output_dir}/welfare_{importer}.png" #같다는 것을 확인했으면 제목 수정하기
+    plt.savefig(file_name)
+    plt.close()
