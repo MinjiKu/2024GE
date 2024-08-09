@@ -222,6 +222,10 @@ def calculate_optimum_tariffs(exporter_name):
     
     return optimal_taus, gov_obj_values
 
+# ^^ top function makes alterations in tariffs but is not using cooperative functions.
+# below one incorporate cooperative functions but no alterations happen
+
+
 # Initialize a dictionary to store tariff values for each iteration
 tariff_history = {exporter: {importer: {industry: [] for industry in var.industries} for importer in var.countries if importer != exporter} for exporter in var.countries}
 
@@ -255,81 +259,9 @@ def constraints_with_cooperative_welfare(tau_js, j, cooperative_welfare_target):
     cons.append({'type': 'eq', 'fun': lambda tau_js, j=j: cooperative_obj(tau_js, cooperative_welfare_target, j)})
     return cons
 
-# # Run iterations until tariffs converge
-# for iteration in range(20):  # Arbitrary number of iterations
-#     previous_tau = {exporter: {importer: {industry: var.tau[exporter][importer][industry] for industry in var.industries} for importer in var.countries if importer != exporter} for exporter in var.countries}
+lst = calculate_welfare_gains()
+target = calculate_cooperative_welfare_objective(lst)
 
-#     for exporter in var.countries:
-#         tau, gov_obj_values = calculate_optimum_tariffs(exporter)
-
-#         for importer in tau:
-#             for industry in tau[importer]:
-#                 tariff_history[exporter][importer][industry].append(tau[importer][industry])
-
-#     # # Plotting tariffs for the current iteration
-#     # plt.figure()
-#     # for importer in var.countries:
-#     #     if importer == exporter:
-#     #         continue
-#     #     for industry in var.industries:
-#     #         plt.plot(tariff_history[exporter][importer][industry], label=f"{importer} - {industry}")
-#     # plt.xlabel("Iteration")
-#     # plt.ylabel("Tariff")
-#     # plt.legend()
-#     # plt.title(f"Tariff Convergence for Exporter: {exporter}")
-#     # plt.savefig(os.path.join(output_dir, f"tariff_convergence_{exporter}_iteration_{iteration}.png"))
-#     # plt.close()
-
-#     # Update welfare history
-#     for country in var.countries:
-#         for industry in var.industries:
-#             welfare_history[country][industry].append(calc_welfare(country, industry))
-
-#         # After the loop ends, print the final cooperative tariffs:
-#     print("Cooperative Tariffs (tau):")
-
-#     for exporter in var.countries:
-#         print(f"\nTariffs for {exporter} as country_i:")
-        
-#         # Create a DataFrame to organize the tariffs neatly
-#         df_tau = pd.DataFrame({importer: {industry: var.tau[exporter][importer][industry] 
-#                                         for industry in var.industries} 
-#                             for importer in var.countries if importer != exporter})
-
-#         # Print the DataFrame in the required format
-#         print(df_tau.T.to_string())
-
-#     # Check for convergence (e.g., using a small threshold for changes in tariffs)
-#     converged = True
-#     for exporter in var.countries:
-#         for importer in var.countries:
-#             if importer == exporter:
-#                 continue
-#             for industry in var.industries:
-#                 if abs(previous_tau[exporter][importer][industry] - var.tau[exporter][importer][industry]) > 1e-5:
-#                     converged = False
-#                     break
-#             if not converged:
-#                 break
-#         if not converged:
-#             break
-
-#     if converged:
-#         break
-
-# # After the loop ends, print the final cooperative tariffs:
-# print("Cooperative Tariffs (tau):")
-
-# for exporter in var.countries:
-#     print(f"\nTariffs for {exporter} as country_i:")
-    
-#     # Create a DataFrame to organize the tariffs neatly
-#     df_tau = pd.DataFrame({importer: {industry: var.tau[exporter][importer][industry] 
-#                                     for industry in var.industries} 
-#                         for importer in var.countries if importer != exporter})
-
-#     # Print the DataFrame in the required format
-#     print(df_tau.T.to_string())
 # Run iterations until tariffs converge
 for iteration in range(100):  # Arbitrary number of iterations
     print(f"\n--- Iteration {iteration + 1} ---")
