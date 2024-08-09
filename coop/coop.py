@@ -227,6 +227,10 @@ def unflatten_tau(flat_list, exporter_name):
     return unflattened_tau
 
 
+# ^^ top function makes alterations in tariffs but is not using cooperative functions.
+# below one incorporate cooperative functions but no alterations happen
+
+
 # Initialize a dictionary to store tariff values for each iteration
 tariff_history = {exporter: {importer: {industry: [] for industry in var.industries} for importer in var.countries if importer != exporter} for exporter in var.countries}
 
@@ -260,6 +264,7 @@ total_welfare_gain = 0
 def calculate_cooperative_welfare_target():
     global cooperative_welfare_target, total_welfare_gain
 
+<<<<<<< HEAD
     welfare_gains = calculate_welfare_gains()
     # Initialize total welfare gain
     total_welfare_gain = 0
@@ -276,6 +281,17 @@ def calculate_cooperative_welfare_target():
 
 #     # Print the DataFrame in the required format
 #     print(df_tau.T.to_string())
+=======
+# Modify the constraints to include cooperative welfare
+def constraints_with_cooperative_welfare(tau_js, j, cooperative_welfare_target):
+    cons = constraints(tau_js, j)
+    cons.append({'type': 'eq', 'fun': lambda tau_js, j=j: cooperative_obj(tau_js, cooperative_welfare_target, j)})
+    return cons
+
+lst = calculate_welfare_gains()
+target = calculate_cooperative_welfare_objective(lst)
+
+>>>>>>> e87657f (optimization did not converge)
 # Run iterations until tariffs converge
 for iteration in range(100):  # Arbitrary number of iterations
     print(f"\n--- Iteration {iteration + 1} ---")
