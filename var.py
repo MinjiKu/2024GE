@@ -35,7 +35,7 @@ x = { #우선 김은 임의로 100으로 채움
 }
 
 # used when calculating welfare
-p_is = {
+p_ijs = {
     'China': {
         'Germany': {'steel': 1.0582132952603989, 'semi': 0.8749017013649593, 'car': 22347.52148025721}, 
         'Japan': {'steel': 0.6545231939214761, 'semi': 1.3782939026477783, 'car': 28876.362273677052}, 
@@ -199,6 +199,9 @@ L_js = {
 }
 
 L_j = {'Korea':29.5, 'USA':171, 'China':780, 'Japan':69.3, 'Germany':44.4} #million 
+
+#demand elasticity
+de = {'steel':0.5, 'semi':0.5, 'car':1.5}
 
 gamma_denom = {j: {industry: 0 for industry in industries} for j in countries}
 
