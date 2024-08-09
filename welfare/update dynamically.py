@@ -25,14 +25,14 @@ var.fill_gamma()
 var.fill_pi()
 factual_pi = var.pi.copy() #factual var.pi 보존
 
-
 var.fill_alpha()
-def update_economic_variables(tau):
+def update_economic_variables(tau, j):
     # Update t based on the new tau values
-    for i in var.countries:
-        for j in var.countries:
-            if i != j:
-                for industry in var.industries:
+    for i in tau.keys():
+            if i==j: continue
+            for industry in var.industries:
+                    print("print t for", i, j, industry, ":", var.t[i][j][industry])
+                    print("print tau for", i, j, industry, ":",tau[i][j][industry])
                     var.t[i][j][industry] = max(tau[i][j][industry] - 1, 1e-10)
 
     # Recalculate gamma, pi, and alpha based on the updated t values
@@ -66,7 +66,7 @@ def calc_welfare(j, s):
 
 def gov_obj(tau, j):
     # Update economic variables based on the current tau_js
-    update_economic_variables(tau)
+    update_economic_variables(tau, j)
 
     total = 0
     for s in var.industries:
@@ -76,7 +76,6 @@ def gov_obj(tau, j):
 
     return -total  # We minimize, so we return the negative
 
-# Constraint 1 for country j and industry s
 def eq_12(j, s):
     total = 0
     for i in var.countries:
@@ -85,7 +84,6 @@ def eq_12(j, s):
     var.P_hat[j][s] = total
     return var.P_hat[j][s] - total
 
-# Constraint 2 helper functions
 def x2(j):
     total = 0
     for i in var.countries:
@@ -124,7 +122,6 @@ def term3(j):
                 total += (var.pi[j][s] / x2(j) * var.pi_hat[j][s]) * var.alpha[j][i][s] * (abs(var.tau_hat[j][i][s]) ** -var.sigma[s]) * (var.w[i] ** (1 - var.sigma[s])) * (var.P_hat[j][s] ** (var.sigma[s] - 1))
     return total
 
-
 def eq_13(j):
     epsilon = 1e-10
     term1 = wL(j) / (x2(j) + epsilon)
@@ -141,7 +138,6 @@ def eq_13(j):
 
     return term1 + term2 + term3 - aggregated_x
 
-# Constraint 3 for country i and industry s
 def eq_10(i, s):
     total = 0
     for j in var.countries:
@@ -151,44 +147,44 @@ def eq_10(i, s):
     
     return total - var.pi_hat[i][s]
 
-def global_constraints_generator(tau_js):
+def global_constraints_generator(tau):
     cons = []
     
     # Constraint 1: eq_12 for every country j and industry s
     for j in var.countries:
         for s in var.industries:
-            cons.append({'type': 'eq', 'fun': lambda tau_js, j=j, s=s: eq_12(j, s)})
+            cons.append({'type': 'eq', 'fun': lambda tau, j=j, s=s: eq_12(j, s)})
     
     # Constraint 2: eq_13 for every country j
     for j in var.countries:
-        cons.append({'type': 'eq', 'fun': lambda tau_js, j=j: eq_13(j)})
+        cons.append({'type': 'eq', 'fun': lambda tau, j=j: eq_13(j)})
     
     # Constraint 3: eq_10 for every country i and industry s
     for i in var.countries:
         for s in var.industries:
-            cons.append({'type': 'eq', 'fun': lambda tau_js, i=i, s=s: eq_10(i, s)})
+            cons.append({'type': 'eq', 'fun': lambda tau, i=i, s=s: eq_10(i, s)})
     
     return cons
 
 def flatten_dict(tau_dict):
     flat_list = []
-    for i in var.countries:
-        for j in var.countries:
-            if i != j:
-                for industry in var.industries:
-                    flat_list.append(tau_dict[i][j][industry])
+    for i in tau_dict.keys():  # Iterate over all exporter keys
+        for industry in var.industries:  # Iterate over all industries
+            flat_list.append(tau_dict[i][industry])
     return flat_list
 
-def unflatten_dict(flat_list):
-    tau_dict = {i: {j: {industry: 0 for industry in var.industries} for j in var.countries if j != i} for i in var.countries}
-    idx = 0
-    for i in var.countries:
-        for j in var.countries:
-            if i != j:
-                for industry in var.industries:
-                    tau_dict[i][j][industry] = flat_list[idx]
-                    idx += 1
-    return tau_dict
+def unflatten_dict(flat_list, j):
+    unflattened_dict = {}
+    index = 0
+    
+    for i in var.countries:  # Iterate over all exporter keys
+        if i != j:  # Skip the importer itself
+            unflattened_dict[i] = {j: {}}  # Initialize the structure
+            for industry in var.industries:  # Iterate over all industries
+                unflattened_dict[i][j][industry] = flat_list[index]
+                index += 1
+    
+    return unflattened_dict
 
 def welfare_change():
     delta_W_W = {}
@@ -246,42 +242,42 @@ def update_hats(tau, t, pi): #갱신된 값이 인자로 들어감
             var.pi_hat[j][s] = abs(var.pi[j][s] / factual_pi[j][s])
 
 
-def calculate_optimum_tariffs():
-    global tau, t, tariff_matrices
+# def calculate_optimum_tariffs():
+#     global tau, t, tariff_matrices
 
-    # Initialize dictionaries for storing results
-    optimal_taus = {i: {j: {industry: var.tau[i][j][industry] for industry in var.industries} for j in var.countries if j != i} for i in var.countries}
-    gov_obj_values = {i: {j: {industry: 0 for industry in var.industries} for j in var.countries if j != i} for i in var.countries}
+#     # Initialize dictionaries for storing results
+#     optimal_taus = {i: {j: {industry: var.tau[i][j][industry] for industry in var.industries} for j in var.countries if j != i} for i in var.countries}
+#     gov_obj_values = {i: {j: {industry: 0 for industry in var.industries} for j in var.countries if j != i} for i in var.countries}
 
-    # Flatten the tau structure to create an initial guess for the optimizer
-    initial_tau = flatten_dict(optimal_taus)
+#     # Flatten the tau structure to create an initial guess for the optimizer
+#     initial_tau = flatten_dict(optimal_taus)
 
-    # Define the global objective function that operates on the entire tau structure
-    def global_gov_obj(flat_tau):
-        total_obj = 0
-        unflattened_tau = unflatten_dict(flat_tau)  # This reconstructs the tau structure
-        update_economic_variables(unflattened_tau)  # Update t, T, pi, etc. based on the new tau
+#     # Define the global objective function that operates on the entire tau structure
+#     def global_gov_obj(flat_tau):
+#         total_obj = 0
+#         unflattened_tau = unflatten_dict(flat_tau)  # This reconstructs the tau structure
+#         update_economic_variables(unflattened_tau)  # Update t, T, pi, etc. based on the new tau
         
-        for importer in var.countries:
-            total_obj += gov_obj(unflattened_tau, importer)
-        return total_obj
+#         for importer in var.countries:
+#             total_obj += gov_obj(unflattened_tau, importer)
+#         return total_obj
 
-    # Generate global constraints for all countries and industries
-    global_constraints = global_constraints_generator(initial_tau)
+#     # Generate global constraints for all countries and industries
+#     global_constraints = global_constraints_generator(initial_tau)
 
-    # Perform global minimization across all countries and industries
-    result = minimize(global_gov_obj, initial_tau, constraints=global_constraints)
+#     # Perform global minimization across all countries and industries
+#     result = minimize(global_gov_obj, initial_tau) #constraints=global_constraints
     
-    # Map the results back into the optimal_taus structure
-    unflattened_result_tau = unflatten_dict(result.x)
-    for i in var.countries:
-        for j in var.countries:
-            if i != j:
-                for industry in var.industries:
-                    optimal_taus[i][j][industry] = unflattened_result_tau[i][j][industry]
-                    gov_obj_values[i][j][industry] = -result.fun
+#     # Map the results back into the optimal_taus structure
+#     unflattened_result_tau = unflatten_dict(result.x)
+#     for i in var.countries:
+#         for j in var.countries:
+#             if i != j:
+#                 for industry in var.industries:
+#                     optimal_taus[i][j][industry] = unflattened_result_tau[i][j][industry]
+#                     gov_obj_values[i][j][industry] = -result.fun
     
-    return optimal_taus, gov_obj_values
+#     return optimal_taus, gov_obj_values
 
 
 def calculate_p_js(p_ijs):
@@ -313,34 +309,90 @@ def calculate_p_is(p_ijs):
     
     return p_is
 
+def optimize_for_importer(j, var):
+    # Flatten the tau structure for the current importer
+    initial_tau = flatten_dict({
+        {i: {s: var.tau[i][j][s] for s in var.industries}}
+        for i in var.countries if i != j
+    })
+    print("initial_tau for ",j, initial_tau)
+    
+    # Define the local objective function for the importer
+    def importer_gov_obj(flat_tau):
+        unflattened_tau = unflatten_dict(flat_tau, j)
+        update_economic_variables(unflattened_tau, j)
+        return gov_obj(unflattened_tau, j)
+
+    # Perform the optimization for the specific importer
+    result = minimize(
+        importer_gov_obj,          # Local objective function
+        initial_tau,               # Initial guess for tau
+        #constraints=global_constraints_generator(initial_tau)  # Constraints
+    )
+    
+    # Map the results back to the original tau structure
+    optimized_tau = unflatten_dict(result.x, j)
+    for i in var.countries:
+        if i != j:
+            for s in var.industries:
+                var.tau[i][j][s] = optimized_tau[i][j][s]
+
+    for i in var.countries:
+        if i != j:
+            for industry in var.industries:
+                welfare_history[i][j][industry].append(-result.fun)  # Append the welfare value
+    
+    for i in var.countries:
+        if i != j:
+            for industry in var.industries:
+                tariff_history[i][j][industry].append(optimized_tau[i][j][industry])  # Append the welfare value
+
+
+def independent_optimization(var):
+    for iter in range(iteration):  # max_iterations: number of iterations you want to run
+        print(f"Iteration {iter + 1}")
+
+        for j in var.countries:
+            print(f"Optimizing tariffs for imports into country: {j}")
+            optimize_for_importer(j, var)
+        
+        # You may want to include any additional code here that needs to run after each iteration
+
+    return var.tau
 
 iteration = 20
 # Perform 100 iterations
 for iter in range(iteration):
     print(f"Iteration {iter + 1}")
     print(var.tau)
-    new_taus = {i: {j: {industry: 0 for industry in var.industries} for j in var.countries if j != i} for i in var.countries}
-    gov_obj_values = {i: {j: {industry: 0 for industry in var.industries} for j in var.countries if j != i} for i in var.countries}
+    # Initialize history trackers if necessary
+    tariff_history = {i: {j: {industry: [] for industry in var.industries} for j in var.countries if j != i} for i in var.countries}
+    welfare_history = {i: {j: {industry: [] for industry in var.industries} for j in var.countries if j != i} for i in var.countries}
     
-    new_taus, gov_obj_values = calculate_optimum_tariffs()
-
-    #delta값 계산을 위해 기존 값 저장
+    # Iterate over each importing country and optimize
+    for j in var.countries:
+        print(f"Optimizing tariffs for imports into country: {j}")
+        optimize_for_importer(j, var.tau)  # This updates var.tau for the specific importer j
+    
+    # Store the current state of the economic variables
     temp_p = var.p_ijs.copy() 
     temp_T = var.T.copy()
     temp_pi = var.pi.copy()
     temp_p_is = calculate_p_is(var.p_ijs)
     temp_p_js = calculate_p_js(var.p_ijs)
 
-    # Apply new_tau and recalculate the dependent variables
-    update_economic_variables(new_taus)
+    # Update economic variables with the new tau after all optimizations
+    update_economic_variables(var.tau, j)
 
+    # Store tariff and welfare history after optimization
     for i in var.countries:
         for j in var.countries:
             if j != i:
                 for industry in var.industries:
-                    tariff_history[i][j][industry].append(var.tau[i][j][industry])  # Store the tariff value
-                    welfare_history[i][j][industry].append(gov_obj_values[i][j][industry])
+                    tariff_history[i][j][industry].append()  # Store the tariff value
+                    welfare_history[i][j][industry].append()
     
+    # Recalculate p_is and p_js after updating tau
     p_is = calculate_p_is(var.p_ijs)
     p_js = calculate_p_js(var.p_ijs)
 
@@ -381,9 +433,6 @@ for iter in range(iteration):
         print(f"\nTariffs for {i} as the home country:")
         df_tau = pd.DataFrame({j: {s: var.tau[i][j][s] for s in var.industries} for j in var.countries if j != i})
         print(df_tau)
-
-    # Recalculate gamma, var.pi, and alpha with new tau values
-    update_hats(var.tau, var.t, var.pi)
 
 iter_list = list(range(1,iteration+1))
 for exporter in var.countries:
