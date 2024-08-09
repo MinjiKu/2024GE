@@ -309,10 +309,10 @@ def calculate_p_is(p_ijs):
     
     return p_is
 
-def optimize_for_importer(j, var):
+def optimize_for_importer(j):
     # Flatten the tau structure for the current importer
     initial_tau = flatten_dict({
-        {i: {s: var.tau[i][j][s] for s in var.industries}}
+        i: {s: var.tau[i][j][s] for s in var.industries}
         for i in var.countries if i != j
     })
     print("initial_tau for ",j, initial_tau)
@@ -332,33 +332,21 @@ def optimize_for_importer(j, var):
     
     # Map the results back to the original tau structure
     optimized_tau = unflatten_dict(result.x, j)
-    for i in var.countries:
-        if i != j:
-            for s in var.industries:
-                var.tau[i][j][s] = optimized_tau[i][j][s]
-
-    for i in var.countries:
-        if i != j:
-            for industry in var.industries:
-                welfare_history[i][j][industry].append(-result.fun)  # Append the welfare value
+    optimized_g = -result.fun
     
-    for i in var.countries:
-        if i != j:
-            for industry in var.industries:
-                tariff_history[i][j][industry].append(optimized_tau[i][j][industry])  # Append the welfare value
+    return optimized_tau, optimized_g
 
+# def independent_optimization(j, var.tau):
+#     for iter in range(iteration):  # max_iterations: number of iterations you want to run
+#         print(f"Iteration {iter + 1}")
 
-def independent_optimization(var):
-    for iter in range(iteration):  # max_iterations: number of iterations you want to run
-        print(f"Iteration {iter + 1}")
-
-        for j in var.countries:
-            print(f"Optimizing tariffs for imports into country: {j}")
-            optimize_for_importer(j, var)
+#         for j in var.countries:
+#             print(f"Optimizing tariffs for imports into country: {j}")
+#             optimize_for_importer(j, var)
         
-        # You may want to include any additional code here that needs to run after each iteration
+#         # You may want to include any additional code here that needs to run after each iteration
 
-    return var.tau
+#     return var.tau
 
 iteration = 20
 # Perform 100 iterations
@@ -367,13 +355,27 @@ for iter in range(iteration):
     print(var.tau)
     # Initialize history trackers if necessary
     tariff_history = {i: {j: {industry: [] for industry in var.industries} for j in var.countries if j != i} for i in var.countries}
-    welfare_history = {i: {j: {industry: [] for industry in var.industries} for j in var.countries if j != i} for i in var.countries}
+    welfare_history = {j: [] for j in var.countries} 
     
     # Iterate over each importing country and optimize
     for j in var.countries:
         print(f"Optimizing tariffs for imports into country: {j}")
-        optimize_for_importer(j, var.tau)  # This updates var.tau for the specific importer j
+        optimized_tau, optimized_g = optimize_for_importer(j)  # This updates var.tau for the specific importer j
+        for i in var.countries:
+            if i != j:
+                for s in var.industries:
+                    var.tau[i][j][s] = optimized_tau[i][j][s]
+
+    for i in var.countries:
+        if i != j:
+            for industry in var.industries:
+                welfare_history[j].append(optimized_g)  # Append the welfare value
     
+    for i in var.countries:
+        if i != j:
+            for industry in var.industries:
+                tariff_history[i][j][industry].append(optimized_tau[i][j][industry])  # Append the welfare value
+
     # Store the current state of the economic variables
     temp_p = var.p_ijs.copy() 
     temp_T = var.T.copy()
@@ -384,13 +386,13 @@ for iter in range(iteration):
     # Update economic variables with the new tau after all optimizations
     update_economic_variables(var.tau, j)
 
-    # Store tariff and welfare history after optimization
-    for i in var.countries:
-        for j in var.countries:
-            if j != i:
-                for industry in var.industries:
-                    tariff_history[i][j][industry].append()  # Store the tariff value
-                    welfare_history[i][j][industry].append()
+    # # Store tariff and welfare history after optimization
+    # for i in var.countries:
+    #     for j in var.countries:
+    #         if j != i:
+    #             for industry in var.industries:
+    #                 tariff_history[i][j][industry].append()  # Store the tariff value
+    #                 welfare_history[i][j][industry].append()
     
     # Recalculate p_is and p_js after updating tau
     p_is = calculate_p_is(var.p_ijs)
