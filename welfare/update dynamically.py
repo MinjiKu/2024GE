@@ -360,7 +360,7 @@ for iter in range(iteration):
                     tariff_history[i][j][s].append(optimized_tau[i][j][s]) 
     
     print(f"tariff history after {iter+1} optimization: ", tariff_history)
-    print(f"welfare history after {iter+1} optimization: ", tariff_history)
+    print(f"welfare history after {iter+1} optimization: ", welfare_history)
     # Store the current state of the economic variables
     temp_p = var.p_ijs.copy() 
     temp_T = var.T.copy()
@@ -407,31 +407,36 @@ for iter in range(iteration):
         print(df_tau)
 
 iter_list = list(range(1,iteration+1))
+iter_list = list(range(1, iteration + 1))
 for exporter in var.countries:
     for importer in var.countries:
         if exporter != importer:
             for industry in var.industries:
                 tariffs = tariff_history[exporter][importer][industry]
 
+                # Calculate the logarithm of the tariff values to highlight small changes
+                log_tariffs = np.log(tariffs)
+
                 plt.figure(figsize=(10, 6))
-                plt.plot(iter_list, tariffs, marker='o', color='#bb0a1e', linewidth = 2)
-                #plt.ylim([1.0, 1.5])
+                plt.plot(iter_list, log_tariffs, marker='o', color='#bb0a1e', linewidth=2)
+                plt.ylim([np.min(log_tariffs) - 0.1, np.max(log_tariffs) + 0.1])
 
-                for i, txt in enumerate(tariffs):
-                    if i == 0 or txt != tariffs[i-1]:  # 첫 포인트이거나, 앞의 값과 다를 때만 표시
-                        plt.annotate(f'{txt:.2f}', (iter_list[i], tariffs[i]), textcoords="offset points", xytext=(0,10), ha='center')
+                for i, txt in enumerate(log_tariffs):
+                    if i == 0 or txt != log_tariffs[i - 1]:  # 첫 포인트이거나, 앞의 값과 다를 때만 표시
+                        plt.annotate(f'{np.exp(txt):.2f}', (iter_list[i], txt), textcoords="offset points", xytext=(0, 10), ha='center')
 
-                plt.title(f'Tariff for "{industry}" from {exporter} to {importer} in Repeated Game')
+                plt.title(f'Logarithm of Tariff for "{industry}" from {exporter} to {importer} in Repeated Game')
                 plt.xlabel('Iteration')
-                plt.ylabel('Tariff')
+                plt.ylabel('Log(Tariff)')
                 plt.grid(True)
-                
+
                 # Save the plot
-                file_name = f"{output_dir}/tariff_{industry}_{exporter}_to_{importer}.png"
+                file_name = f"{output_dir}/log_tariff_{industry}_{exporter}_to_{importer}.png"
                 plt.savefig(file_name)
                 plt.close()
 
-for improter in var.countries:
+
+for importer in var.countries:
     welfares = welfare_history[importer]
 
     plt.figure(figsize=(10, 6))
@@ -450,6 +455,6 @@ for improter in var.countries:
     plt.grid(True)
     
     # Save the plot
-    file_name = f"{output_dir}/welfare_{importer}.png" #같다는 것을 확인했으면 제목 수정하기
+    file_name = f"{output_dir}/welfare_{importer}.png"
     plt.savefig(file_name)
     plt.close()
