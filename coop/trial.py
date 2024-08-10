@@ -63,12 +63,8 @@ def calc_x(j, s):
     for i in var.countries:
         if i == j: continue
         TR += var.t[i][j][s] * var.T[i][j][s]
-        # if j == 'China' or j == 'USA':
-        sum += (var.T[i][j][s] + var.de[s] * (var.tau5[i][j][s] - var.tau4[i][j][s]))
-        # else:
-        #     sum += (var.T[i][j][s] + var.de[s] * (var.tau2[i][j][s] - var.tau[i][j][s]))
     
-    # sum = var.w[j] * var.L_js[j][s] + var.pi[j][s] + var.L_js[j][s]/var.L_j[j] * TR
+    sum = var.w[j] * var.L_js[j][s] + var.pi[j][s] + var.L_js[j][s]/var.L_j[j] * TR
     
     return sum
 
