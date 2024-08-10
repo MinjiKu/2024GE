@@ -15,7 +15,8 @@ from scipy.optimize import minimize
 import pandas as pd
 import welfare
 import matplotlib.pyplot as plt
-from scipy.optimize import root
+from scipy.optimize import root, minimize
+from scipy.optimize import Bounds
 
 from matplotlib import rcParams
 
@@ -28,6 +29,10 @@ var.fill_pi()
 factual_pi = var.pi.copy() #factual var.pi 보존
 
 var.fill_alpha()
+
+# Initialize previous_tau globally
+previous_tau = var.tau.copy()
+
 def update_economic_variables(tau, j):
     # Update t based on the new tau values
     for i in var.countries:
@@ -154,26 +159,6 @@ def eq_10(i, s):
 
     return total - var.pi_hat[i][s]
 
-def flatten_dict(tau_dict):
-    flat_list = []
-    for i in tau_dict.keys():  # Iterate over all exporter keys
-        for industry in var.industries:  # Iterate over all industries
-            flat_list.append(tau_dict[i][industry])
-    return flat_list
-
-def unflatten_dict(flat_list, j):
-    unflattened_dict = {}
-    index = 0
-    
-    for i in var.countries:  # Iterate over all exporter keys
-        if i != j:  # Skip the importer itself
-            unflattened_dict[i] = {j: {}}  # Initialize the structure
-            for industry in var.industries:  # Iterate over all industries
-                unflattened_dict[i][j][industry] = flat_list[index]
-                index += 1
-    
-    return unflattened_dict
-
 def update_hats(tau, t, pi):
     global factual_pi
     for i in var.countries:
@@ -186,58 +171,15 @@ def update_hats(tau, t, pi):
         for s in var.industries:
             var.pi_hat[j][s] = abs(var.pi[j][s] / factual_pi[j][s])
 
-# def calculate_optimum_tariffs(exporter_name):
-#     global tau, t, tariff_matrices
-
-#     optimal_taus = {j: {industry: 0 for industry in var.industries} for j in var.countries if j != exporter_name}
-#     gov_obj_values = {j: {industry: 0 for industry in var.industries} for j in var.countries if j != exporter_name} 
-    
-#     count_idx = 0
-#     for j, importer in enumerate(var.countries):
-#         if importer == exporter_name:
-#             continue
-        
-#         # Calculate welfare gains and cooperative welfare target
-#         welfare_gains = calculate_welfare_gains()
-#         cooperative_welfare_target = calculate_cooperative_welfare_objective(welfare_gains)
-        
-#         flat_matrix = flatten_dict({j: {s: var.tau[exporter_name][j][s] for s in var.industries} for j in var.countries if j != exporter_name})
-        
-#         # result = minimize(
-#         #     gov_obj, 
-#         #     flat_matrix, 
-#         #     args=(importer,), 
-#         #     constraints=constraints_with_cooperative_welfare(flat_matrix, importer, cooperative_welfare_target)
-#         # )
-#         result = root(cooperative_obj, var.tau, cooperative_welfare_target)
-        
-#         idx = 0
-#         for industry in var.industries:
-#             optimal_taus[importer][industry] = result.x[count_idx * (var.num_industries) + idx]
-#             gov_obj_values[importer][industry] = -result.fun
-#             idx += 1
-#         count_idx += 1
-
-#     for importer in optimal_taus:
-#         for industry in optimal_taus[importer]:
-#             var.tau[exporter_name][importer][industry] = optimal_taus[importer][industry]
-    
-#     return optimal_taus, gov_obj_values
-
 def flatten_tau(tau_dict):
-    """
-    Flatten a nested dictionary of tau into a single list.
-    """
     flat_list = []
     for importer, industries in tau_dict.items():
         for industry, value in industries.items():
-            flat_list.append(value)
+            flat_list.extend(value.values())
     return flat_list
 
+
 def unflatten_tau(flat_list, exporter_name):
-    """
-    Convert a flat list back into a nested dictionary of tau.
-    """
     idx = 0
     unflattened_tau = {j: {s: 0 for s in var.industries} for j in var.countries if j != exporter_name}
     for importer in unflattened_tau:
@@ -246,126 +188,179 @@ def unflatten_tau(flat_list, exporter_name):
             idx += 1
     return unflattened_tau
 
+
 # Initialize a dictionary to store tariff values for each iteration
 tariff_history = {exporter: {importer: {industry: [] for industry in var.industries} for importer in var.countries if importer != exporter} for exporter in var.countries}
 
 # Initialize a dictionary to store welfare values for each iteration
 welfare_history = {country: {industry: [] for industry in var.industries} for country in var.countries}
 
+
+welfare_gains = {importer: {country: 0 for country in var.countries if importer != country} for importer in var.countries}
+
 # Calculate the cooperative welfare objective
 def calculate_welfare_gains():
+    global welfare_gains
+
     var.coop_lambda()
-    welfare_gains = {}
-    for country in var.countries:
-        welfare_gains[country] = sum(var.pol_econ[country][s] * calc_welfare(country, s) for s in var.industries)
+    welfare_gains = {importer: {country: 0 for country in var.countries if importer != country} for importer in var.countries}
+
+    for importer in var.countries:
+       
+        for country in var.countries:
+            if importer != country:
+                welfare_gains[importer][country] += sum(var.pol_econ[country][s] * calc_welfare(country, s) for s in var.industries)
+
+        # print("welfare_gains")
+        # print(welfare_gains)
+        # print("\n")
     return welfare_gains
 
-def calculate_cooperative_welfare_objective(welfare_gains):
-    total_welfare_gain = sum(welfare_gains.values())
+cooperative_welfare_target = 0
+total_welfare_gain = 0
+
+def calculate_cooperative_welfare_target():
+    global cooperative_welfare_target, total_welfare_gain
+
+    welfare_gains = calculate_welfare_gains()
+    # Initialize total welfare gain
+    total_welfare_gain = 0
+    
+    # Iterate over each importer and their associated welfare gains
+    for importer in welfare_gains:
+        for exporter in welfare_gains[importer]:
+            if importer == exporter:
+                continue
+            total_welfare_gain += welfare_gains[importer][exporter]
+    
+    print("Total welfare gain")
+    print(total_welfare_gain)
+    
+    # Calculate the cooperative welfare target
     cooperative_welfare_target = total_welfare_gain / len(var.countries)
+    print("Cooperative welfare target")
+    print(cooperative_welfare_target)
+    
     return cooperative_welfare_target
 
-# def cooperative_obj(tau_js, cooperative_welfare_target, j):
-#     total_welfare = sum(var.pol_econ[j][s] * calc_welfare(j, s) for s in var.industries)
-#     return abs(total_welfare - cooperative_welfare_target)  # Absolute difference from the target
-
-def cooperative_obj(tau_js, cooperative_welfare_target, exporter_name):
-    """
-    Calculate the residuals of the cooperative objective function.
-    This function returns an array where each element represents
-    the difference between the target and current welfare for each country.
-    """
-    residuals = []
-
-    # Unflatten tau_js to the dictionary format
-    tau_dict = unflatten_tau(tau_js, exporter_name)
-
-    for j in var.countries:
-        if j == exporter_name:
-            continue
-        
-        # Calculate current welfare for the country
-        total_welfare = sum(var.pol_econ[j][s] * calc_welfare(j, s) for s in var.industries)
-        
-        # Calculate the residual (difference from the cooperative welfare target)
-        residual = total_welfare - cooperative_welfare_target
-        residuals.append(residual)
-    
-    return np.array(residuals)
+# Welfare function
+def calc_welfare2(j, s, tau_dict):
+    update_economic_variables(tau_dict, j)
+    return calc_x(j, s) / var.P_j[j]
 
 
-def update_economic_variables(tau_dict, exporter_name):
-    """
-    Update economic variables based on the new tau values.
-    This function should modify the global variables like var.t, var.pi, etc.
-    based on the new tau values.
-    """
-    global previous_tau
-    previous_tau = {i: {j: {s: var.tau[i][j][s] for s in var.industries} for j in var.countries if j != i} for i in var.countries}
+calculate_cooperative_welfare_target()
 
-    for i in var.countries:
-        if i == exporter_name:
-            continue
-        for s in var.industries:
-            var.t[i][exporter_name][s] = max(tau_dict[i][s] - 100, 1e-10)
+# Calculate the starting welfare for each country
+starting_welfare = {country: 0 for country in var.countries}
+for country in var.countries:
+    for exporter in var.countries:
+        if country == exporter: continue
+        starting_welfare[country] += welfare_gains[country][exporter]
 
-    var.fill_gamma()
-    var.fill_alpha()
-    var.fill_pi()
+print("starting welfare")
+print(starting_welfare)
+print("\n")
 
-def cooperative_obj(tau_js, cooperative_welfare_target, exporter_name):
-    """
-    Calculate the residuals of the cooperative objective function.
-    This function returns an array where each element represents
-    the difference between the target and current welfare for each country.
-    """
-    residuals = []
+# ========== logic checked =================
 
-    # Unflatten tau_js to the dictionary format
-    tau_dict = unflatten_tau(tau_js, exporter_name)
+def cooperative_obj(tau_js, cooperative_welfare_target, j):
+    # print(f"tau_js: {tau_js}")
+    # print(f"cooperative_welfare_target: {cooperative_welfare_target}")
+    # print(f"Country: {j}")
 
-    # Update economic variables based on the new tau values
-    update_economic_variables(tau_dict, exporter_name)
+    tau_dict = unflatten_tau(tau_js, j)
 
-    for j in var.countries:
-        if j == exporter_name:
-            continue
-        
-        # Calculate current welfare for the country
-        total_welfare = sum(var.pol_econ[j][s] * calc_welfare(j, s) for s in var.industries)
-        
-        # Calculate the residual (difference from the cooperative welfare target)
-        residual = total_welfare - cooperative_welfare_target
-        for i in range(3):
-            residuals.append(residual)
-    
-    return np.array(residuals)
+    # print("tau_dict:", tau_dict)
 
-def calculate_optimum_tariffs(exporter_name):
-    global var
+    update_economic_variables(tau_dict, j)
+    updated_welfare_gains = calculate_welfare_gains()
+    total_welfare_for_j = sum(updated_welfare_gains[j].values())
+    welfare_difference = total_welfare_for_j - cooperative_welfare_target
+    return abs(welfare_difference)
 
-    # Calculate welfare gains and cooperative welfare target
-    welfare_gains = calculate_welfare_gains()
-    cooperative_welfare_target = calculate_cooperative_welfare_objective(welfare_gains)
+# ----------------- initial ------------------
 
-    # Flatten initial guess for tau
-    flat_matrix = flatten_tau({j: {s: var.tau[exporter_name][j][s] for s in var.industries} for j in var.countries if j != exporter_name})
+# # Flatten the tau dictionary into an array
+# initial_tau = flatten_tau(var.tau_temp)
 
-    # Use root to solve for optimal tau
-    result = root(lambda x: cooperative_obj(x, cooperative_welfare_target, exporter_name), flat_matrix)
+# bounds = Bounds(1,2)
 
-    if result.success:
-        optimal_tau = unflatten_tau(result.x, exporter_name)
-        for importer in optimal_tau:
-            for industry in optimal_tau[importer]:
-                var.tau[exporter_name][importer][industry] = optimal_tau[importer][industry]
-        print("Final cooperative tariffs:")
-        print(var.tau[exporter_name])
-    else:
-        print("Optimization did not converge.")
+# # Now run your minimization
+# result = minimize(
+#     cooperative_obj, 
+#     initial_tau, 
+#     args=(cooperative_welfare_target, 'Japan'),  # Replace 'Japan' with the actual country name if needed
+#     method='L-BFGS-B', 
+#     tol=1e-12,                 # Tolerance for termination (set very small to ensure high precision)
+#     bounds = bounds,
+#     options={'disp': True, 'maxiter': 20000, 'ftol': 1e-8}
+# )
 
-    return var.tau[exporter_name]
+# print(result.x)
 
-exporter_name = 'USA'  # Replace with the relevant exporter country
-final_tariffs = calculate_optimum_tariffs(exporter_name)
+# -------------- changed ------------------
+def optimize(country):
+    initial_tau = flatten_tau(var.tau_temp)
+    bounds = Bounds(1, 2)
 
+    # Perform the minimization
+    result = minimize(
+        cooperative_obj,
+        initial_tau,
+        args=(cooperative_welfare_target, country),
+        method='L-BFGS-B',
+        tol=1e-12,
+        bounds=bounds,
+        options={'disp': True, 'maxiter': 20000, 'ftol': 1e-8}
+    )
+    return result
+
+# Initialize a dictionary to store results for each country
+optimization_results = {}
+
+# Loop through all countries and perform optimization
+for country in var.countries:
+    print(f"Optimizing for {country}...")
+    result = optimize(country)
+    optimization_results[country] = result.x
+
+    print(f"Optimization result for {country}:")
+    print(optimization_results[country])
+
+    print(f"welfare difference for {country}: ")
+    print(result.fun)
+
+#  ======================
+# 1. Plot starting welfares for each country
+plt.figure(figsize=(12, 6))
+plt.bar(starting_welfare.keys(), starting_welfare.values(), color='skyblue')
+plt.axhline(y=cooperative_welfare_target, color='red', linestyle='--', label='Cooperative Welfare Target')
+plt.xlabel('Country')
+plt.ylabel('Starting Welfare')
+plt.title('Starting Welfares for Each Country')
+plt.xticks(rotation=45)
+plt.legend()
+plt.tight_layout()
+plt.savefig('start&target.png')
+# plt.show()
+
+# # 2. Plot change rates of tau (after optimization)
+# tau_change_rates = {}
+# for country in var.countries:
+#     initial_tau = flatten_tau(var.tau_temp)
+#     optimized_tau_dict = unflatten_tau(optimization_results[country], country)
+#     optimized_tau = flatten_tau(optimized_tau_dict)
+
+#     change_rates = [(opt - init) / init if init != 0 else 0 for init, opt in zip(initial_tau, optimized_tau)]
+#     tau_change_rates[country] = change_rates
+
+# plt.figure(figsize=(12, 8))
+# for country, change_rates in tau_change_rates.items():
+#     plt.plot(change_rates, label=country)
+# plt.xlabel('Tariff Index')
+# plt.ylabel('Change Rate')
+# plt.title('Change Rates of Tau After Optimization')
+# plt.legend()
+# plt.savefig('change_rate_plot.png')
+# plt.tight_layout()
