@@ -108,7 +108,7 @@ tau = {
 }
 tau_temp = {country: {partner: {product: value * 100 for product, value in products.items()}
                for partner, products in partners.items()}
-     for country, partners in tau_temp.items()}
+     for country, partners in tau.items()}
 
 
 sigma = {'gim': 3.57, 'steel': 4.0, 'semi': 2.5, 'car': 1.8}

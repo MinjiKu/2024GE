@@ -19,6 +19,7 @@ from scipy.optimize import root, minimize
 from scipy.optimize import Bounds
 
 from matplotlib import rcParams
+import pickle
 
 # Times New Roman 폰트를 사용하도록 설정
 rcParams['font.family'] = 'serif'
@@ -179,14 +180,38 @@ def flatten_tau(tau_dict):
     return flat_list
 
 
-def unflatten_tau(flat_list, exporter_name):
-    idx = 0
-    unflattened_tau = {j: {s: 0 for s in var.industries} for j in var.countries if j != exporter_name}
-    for importer in unflattened_tau:
-        for industry in var.industries:
-            unflattened_tau[importer][industry] = flat_list[idx]
-            idx += 1
-    return unflattened_tau
+def unflatten_tau(flat_list, importer_name):
+    # idx = 0
+    # unflattened_tau = {j: {s: 0 for s in var.industries} for j in var.countries if j != importer_name}
+    # for importer in unflattened_tau:
+    #     for industry in var.industries:
+    #         unflattened_tau[importer][industry] = flat_list[idx]
+    #         idx += 1
+    # return unflattened_tau
+    unflattened_dict = {}
+    index = 0
+
+    # print("flat list")
+    # print(flat_list)
+    # print("\n")
+    
+    for i in var.countries:
+        for j in var.countries:  # Iterate over all exporter keys
+            # if i == importer_name:  continue # Skip the importer itself
+            if i == j: continue
+            unflattened_dict[i] = {j: {}}  # Initialize the structure
+            for industry in var.industries:  # Iterate over all industries
+                unflattened_dict[i][j][industry] = flat_list[index]
+                index += 1
+
+    # print("unflattened_dict")
+    # for i in var.countries:
+    #     for j in var.countries:
+    #         if i == j: continue
+    #         for s in var.industries:
+    #             print(unflattened_dict[i][j][s])
+
+    return unflattened_dict
 
 
 # Initialize a dictionary to store tariff values for each iteration
@@ -299,9 +324,38 @@ def cooperative_obj(tau_js, cooperative_welfare_target, j):
 
 # print(result.x)
 
+
+def flatten_dict(tau_dict):
+    flat_list = []
+    for i in tau_dict.keys():  # Iterate over all exporter keys
+        for industry in var.industries:  # Iterate over all industries
+            flat_list.append(tau_dict[i][industry])
+    return flat_list
+
+def unflatten_dict(flat_list, j):
+    unflattened_dict = {}
+    index = 0
+
+    print("flat list")
+    print(flat_list)
+    print("\n")
+    
+    for i in var.countries:  # Iterate over all exporter keys
+        if i != j:  # Skip the importer itself
+            unflattened_dict[i] = {j: {}}  # Initialize the structure
+            for industry in var.industries:  # Iterate over all industries
+                unflattened_dict[i][j][industry] = flat_list[i][industry] #flat_list[index]
+                index += 1
+    
+    return unflattened_dict
+
 # -------------- changed ------------------
 def optimize(country):
-    initial_tau = flatten_tau(var.tau_temp)
+    initial_tau = flatten_tau(var.tau)
+    print("initial tau")
+    print(initial_tau)
+    print("\n")
+
     bounds = Bounds(1, 2)
 
     # Perform the minimization
@@ -314,7 +368,18 @@ def optimize(country):
         bounds=bounds,
         options={'disp': True, 'maxiter': 20000, 'ftol': 1e-8}
     )
-    return result
+    print("result")
+    print(result.x)
+    print("\n")
+    # return result.x
+    # Map the results back to the original tau structure
+    optimized_tau = unflatten_tau(result.x, country)
+
+    print("optimized tau")
+    print(optimized_tau)
+    print("\n")
+
+    return optimized_tau
 
 # Initialize a dictionary to store results for each country
 optimization_results = {}
@@ -323,13 +388,16 @@ optimization_results = {}
 for country in var.countries:
     print(f"Optimizing for {country}...")
     result = optimize(country)
-    optimization_results[country] = result.x
+    optimization_results[country] = result
 
     print(f"Optimization result for {country}:")
     print(optimization_results[country])
 
-    print(f"welfare difference for {country}: ")
-    print(result.fun)
+    print("optimization result")
+    print(optimization_results)
+
+    # print(f"welfare difference for {country}: ")
+    # print(result.fun)
 
 #  ======================
 # 1. Plot starting welfares for each country
@@ -343,24 +411,86 @@ plt.xticks(rotation=45)
 plt.legend()
 plt.tight_layout()
 plt.savefig('start&target.png')
-# plt.show()
 
-# # 2. Plot change rates of tau (after optimization)
-# tau_change_rates = {}
-# for country in var.countries:
-#     initial_tau = flatten_tau(var.tau_temp)
-#     optimized_tau_dict = unflatten_tau(optimization_results[country], country)
-#     optimized_tau = flatten_tau(optimized_tau_dict)
+# ========================
 
-#     change_rates = [(opt - init) / init if init != 0 else 0 for init, opt in zip(initial_tau, optimized_tau)]
-#     tau_change_rates[country] = change_rates
 
-# plt.figure(figsize=(12, 8))
-# for country, change_rates in tau_change_rates.items():
-#     plt.plot(change_rates, label=country)
-# plt.xlabel('Tariff Index')
-# plt.ylabel('Change Rate')
-# plt.title('Change Rates of Tau After Optimization')
-# plt.legend()
-# plt.savefig('change_rate_plot.png')
-# plt.tight_layout()
+# iteration = 10
+
+# # Perform 100 iterations
+# for iter in range(iteration):
+#     print(f"Iteration {iter + 1}")
+#     print(var.tau)
+
+#     previous_tau = var.tau.copy()
+#     # Store the current state of the economic variables
+#     # temp_p = var.p_ijs.copy() 
+#     temp_T = var.T.copy()
+#     temp_pi = var.pi.copy()
+#     # temp_p_is = calculate_p_is(var.p_ijs)
+#     # temp_p_js = var.p_ijs.copy() 
+#     # p_is = calculate_p_is(var.p_ijs)
+#     # p_js = var.p_ijs.copy()
+#     # Iterate over each importing country and optimize
+    
+    
+#     for j in var.countries:
+#         print(f"Optimizing tariffs for imports into country: {j}")
+#         optimized_tau = optimize(j)
+
+#         unflatten_dict(optimized_tau, j)
+
+#         print("optimized_tau")
+#         print(optimized_tau)
+#         print("\n")
+
+#         # #print(f"Welfare for {j} after optimization: {optimized_g}")
+#         # welfare_history[j].append(optimized_g)
+#         #print(f"print welfare history for {j}: {welfare_history[j]}")
+#         for i in var.countries:
+#             if i == j: continue
+#             for s in var.industries:   
+#                 # var.tau[i][j][s] = optimized_tau[i][s]
+#                 # tariff_history[i][j][s].append(max(optimized_tau[i][s], 1e-10)) 
+#                 var.tau[i][j][s] = optimized_tau[i][j][s]
+#                 tariff_history[i][j][s].append(max(optimized_tau[i][j][s], 1e-10)) 
+    
+
+#     # Update economic variables with the new tau after all optimizations
+#     update_economic_variables(var.tau, j)
+
+#     # Recalculate p_is and p_js after updating tau
+    
+#     #Delta 값 계산
+#     changerate_pi = {country: {industry: (var.pi[country][industry] - temp_pi[country][industry])/temp_pi[country][industry] for industry in var.industries} for country in var.countries}
+#     # changerate_p_is = {i: {industry: (p_is[i][industry] - temp_p_is[i][industry])/ temp_p_is[i][industry] for industry in var.industries} for i in var.countries}
+#     # changerate_p_js = {j: {i:{industry: (p_js[j][i][industry] - temp_p_js[j][i][industry])/temp_p_js[j][i][industry] for industry in var.industries} for i in var.countries if i!=j} for j in var.countries}
+#     changerate_T = {i: {j: {industry: (var.T[i][j][industry] - temp_T[i][j][industry])/temp_T[i][j][industry] for industry in var.industries} for j in var.countries if i != j} for i in var.countries}
+    
+#     print("pi difference:" , ((var.pi[i][industry] - temp_pi[i][industry]) for i in var.countries for industry in var.industries))
+#     # print("p_is difference:" , ((p_is[i][industry] - temp_p_is[i][industry]) for i in var.countries for industry in var.industries))
+#     print("T difference:" , ((var.T[i][j][industry] - temp_T[i][j][industry]) for i in var.countries for j in var.countries if i!=j for industry in var.industries))
+#     # print("p_js difference:" , ((p_js[i][j][industry] - p_js[i][j][industry]) for i in var.countries for j in var.countries if i!=j for industry in var.industries))
+    
+#     var.fill_pi()
+#     var.fill_gamma()
+#     var.fill_alpha()
+
+#     # Recalculate gamma, var.pi, and alpha with new tau values
+#     update_hats(var.tau, var.t, var.pi)
+
+
+#     # # Call welfare_change with updated delta values
+#     # print("welfare change effect of iteration", (iter+1), welfare_change())
+#     print("\nCorresponding t values:")
+#     for i in var.countries:
+#         print(f"\nt values for {i} as the home country:")
+#         df_t = pd.DataFrame({j: {s: var.t[i][j][s] for s in var.industries} for j in var.countries if j != i})
+#         print(df_t)
+
+#     # Print the current state of var.tau
+#     print("Cooperative Tariffs (tau) after iteration", iter + 1)
+#     for i in var.countries:
+#         print(f"\nTariffs for {i} as the home country:")
+#         df_tau = pd.DataFrame({j: {s: var.tau[i][j][s] for s in var.industries} for j in var.countries if j != i})
+#         print(df_tau)
