@@ -18,6 +18,7 @@ from scipy.optimize import Bounds
 import pandas as pd
 import matplotlib.pyplot as plt
 from matplotlib import rcParams
+import pickle
 
 # Times New Roman 폰트를 사용하도록 설정
 rcParams['font.family'] = 'serif'
@@ -303,7 +304,8 @@ def optimize_for_importer(j):
 tariff_history = {i: {j: {industry: [] for industry in var.industries} for j in var.countries if j != i} for i in var.countries}
 welfare_history = {j: [] for j in var.countries} 
 
-iteration = 15
+iteration = 150
+
 # Perform 100 iterations
 for iter in range(iteration):
     print(f"Iteration {iter + 1}")
@@ -374,6 +376,12 @@ for iter in range(iteration):
         df_tau = pd.DataFrame({j: {s: var.tau[i][j][s] for s in var.industries} for j in var.countries if j != i})
         print(df_tau)
 
+# Open the file in binary write mode and use pickle to dump the data
+with open("tariff_history.pkl", 'wb') as file:
+    pickle.dump(tariff_history, file)
+with open("welfare_history.pkl", 'wb') as file:
+    pickle.dump(welfare_history, file)
+
 iter_list = list(range(1, iteration + 1))
 for exporter in var.countries:
     for importer in var.countries:
@@ -429,10 +437,9 @@ for exporter in var.countries:
                 plt.close()
 
 for importer in var.countries:
-    welfares = welfare_history[importer]
 
     plt.figure(figsize=(10, 6))
-    plt.plot(iter_list, welfares, marker='o', color='#bb0a1e', linewidth = 2)
+    plt.plot(iter_list, welfare_history[importer], marker='o', color='#bb0a1e', linewidth = 2)
     #plt.ylim([1.0, 1.5])
     plt.grid(True, linestyle='--', alpha=0.7)
 
@@ -463,7 +470,8 @@ for importer in var.countries:
 
     # Annotate the plot with the percentage change values
     for i, txt in enumerate(percentage_changes):
-        plt.annotate(f'{txt:.2f}%', (iter_list[i+1], percentage_changes[i]), textcoords="offset points", xytext=(0,10), ha='center')
+        if i%100==0:
+            plt.annotate(f'{txt:.2f}%', (iter_list[i+1], percentage_changes[i]), textcoords="offset points", xytext=(0,10), ha='center')
 
     plt.title(f'Welfare Change Rate for {importer} in Repeated Game')
     plt.xlabel('Iteration')
@@ -475,4 +483,26 @@ for importer in var.countries:
     plt.savefig(file_name)
     plt.close()
 
-#%%
+for exporter in var.countries:
+    for importer in var.countries:
+        if exporter != importer:
+            for industry in var.industries:
+                tariffs = tariff_history[exporter][importer][industry]
+                
+                plt.figure(figsize=(10, 6))
+                plt.plot(iter_list[1:], tariffs, marker='o', color='#bb0a1e', linewidth=2)
+
+                # Optional: set the y-limits manually to zoom in
+                plt.ylim([1 - 0.01, 1.5 + 0.01])
+
+                plt.title(f'Tariff for "{industry}" from {exporter} to {importer} in Repeated Game')
+                plt.xlabel('Iteration')
+                plt.ylabel('Tariff')
+                plt.grid(True)
+
+                # Save the plot
+                file_name = f"{output_dir}/change_rate_tariff_{industry}_{exporter}_to_{importer}.png"
+                plt.savefig(file_name)
+                plt.close()
+
+
