@@ -1,6 +1,7 @@
 import sys
 import os
 
+
 # Get the absolute path of the current script's directory
 script_dir = os.path.dirname(os.path.abspath(__file__))
 
@@ -13,6 +14,7 @@ import var
 # # to check if actual tariffs get calculated
 import numpy as np
 from scipy.optimize import minimize
+from scipy.optimize import Bounds
 import pandas as pd
 import matplotlib.pyplot as plt
 from matplotlib import rcParams
@@ -31,7 +33,8 @@ def update_economic_variables(tau, j):
     for i in tau.keys():
             if i==j: continue
             for industry in var.industries:
-                    var.t[i][j][industry] = max(tau[i][j][industry] - 100, 1e-10)
+                    if (tau[i][j][industry]<1 or tau[i][j][industry]>2): print("tau out of range")
+                    else: var.t[i][j][industry] = max(tau[i][j][industry] - 1.0, 1e-10)
 
     # Recalculate gamma, pi, and alpha based on the updated t values
     var.fill_gamma()
@@ -182,7 +185,8 @@ def unflatten_dict(flat_list, j):
     return unflattened_dict
 
 def welfare_change():
-    delta_W_W = {}
+    delta_W_W = {country: 0 for country in var.countries}
+    welfare_change_terms = {country: 0 for country in var.countries}
 
     x_js_list = {country: {industry: 0 for industry in var.industries} for country in var.countries}
     x_j_list = {country: 0 for country in var.countries}
@@ -192,7 +196,7 @@ def welfare_change():
             x_js_list[j][s] = calc_x(j, s)
             x_j_list[j] += x_js_list[j][s]
    
-    
+
     for j in var.countries:  # j국 (수입국)
         term1 = 0
         term2 = 0
@@ -201,18 +205,17 @@ def welfare_change():
         for i in var.countries:
             if i != j:
                 for s in var.industries: 
-                    term1 += (var.T[i][j][s] / x_j_list[j]) * (changerate_p_js[j][s] - changerate_p_js[i][s])
+                    term1 += (var.T[i][j][s] / x_j_list[j]) * (changerate_p_js[j][i][s] - changerate_p_is[i][s])
+                    term2 += (var.pi[j][s] / x_j_list[j]) * (changerate_pi[j][s] - changerate_p_js[j][i][s])
                     term3 += (var.t[i][j][s] * var.T[i][j][s] / x_j_list[j]) * (changerate_T[i][j][s]-changerate_p_is[i][s])
-        
-        for s in var.industries:  # s산업
-            term2 += (var.pi[j][s] / x_j_list[j]) * (changerate_pi[j][s] - changerate_p_js[j][s])
-        
+                    
         delta_W_W[j] = term1 + term2 + term3
-    
-    return delta_W_W
+        welfare_change_terms[j] = {"term1": term1, "term2": term2, "term3": term3}
+
+    return delta_W_W, welfare_change_terms
 
 p_is = {i: {s: 0 for s in var.industries} for i in var.countries}
-p_js = {j: {s: float('inf') for s in var.industries} for j in var.countries}
+p_js = {i: {j: {s: float('inf') for s in var.industries} for j in var.countries if i!=j} for i in var.countries}
 
 # Ensure the directory exists
 output_dir = "nash_img"
@@ -232,18 +235,18 @@ def update_hats(tau, t, pi): #갱신된 값이 인자로 들어감
         for s in var.industries:
             var.pi_hat[j][s] = abs(pi[j][s] / factual_pi[j][s])
 
-def calculate_p_js(p_ijs):
-    p_js = {i: {s: 1e-10 for s in var.industries} for i in var.countries}
+# def calculate_p_js(p_ijs):
+#     p_js = {j: {i: {industry: p_ijs[j][i][s] for industry in var.industries} for j in var.countries if i != j} for i in var.countries}
     
-    for i in var.countries:
-        for s in var.industries:
-            max_value = float('-inf')
-            for j in var.countries:
-                if j != i:
-                    max_value = max(max_value, p_ijs[i][j][s])
-            p_js[i][s] = max_value
+#     for i in var.countries:
+#         for s in var.industries:
+#             max_value = float('-inf')
+#             for j in var.countries:
+#                 if j != i:
+#                     max_value = max(max_value, p_ijs[i][j][s])
+#             p_js[i][s] = max_value
     
-    return p_js
+#     return p_js
 
 def calculate_p_is(p_ijs):
     p_is = {j: {s: float('inf') for s in var.industries} for j in var.countries}
@@ -275,12 +278,14 @@ def optimize_for_importer(j):
         update_economic_variables(unflattened_tau, j)
         return gov_obj(unflattened_tau, j)
 
+    bounds = Bounds(1,2)
     # Perform the optimization for the specific importer
     result = minimize(
         importer_gov_obj,          # Local objective function
         initial_tau,               # Initial guess for tau
         method='L-BFGS-B',         # Optimization method
         tol=1e-12,                 # Tolerance for termination (set very small to ensure high precision)
+        bounds = bounds,
         options={
             'disp': True,         # Display convergence messages
             'maxiter': 10000,     # Maximum number of iterations (set high if necessary)
@@ -298,14 +303,24 @@ def optimize_for_importer(j):
 tariff_history = {i: {j: {industry: [] for industry in var.industries} for j in var.countries if j != i} for i in var.countries}
 welfare_history = {j: [] for j in var.countries} 
 
-iteration = 50
+iteration = 15
 # Perform 100 iterations
 for iter in range(iteration):
     print(f"Iteration {iter + 1}")
     print(var.tau)
 
     previous_tau = var.tau.copy()
+    # Store the current state of the economic variables
+    temp_p = var.p_ijs.copy() 
+    temp_T = var.T.copy()
+    temp_pi = var.pi.copy()
+    temp_p_is = calculate_p_is(var.p_ijs)
+    temp_p_js = var.p_ijs.copy() 
+    p_is = calculate_p_is(var.p_ijs)
+    p_js = var.p_ijs.copy()
     # Iterate over each importing country and optimize
+    
+    
     for j in var.countries:
         print(f"Optimizing tariffs for imports into country: {j}")
         optimized_tau, optimized_g = optimize_for_importer(j)
@@ -319,24 +334,23 @@ for iter in range(iteration):
                     var.tau[i][j][s] = optimized_tau[i][j][s]
                     tariff_history[i][j][s].append(max(optimized_tau[i][j][s], 1e-10)) 
     
-    print(f"tariff history after {iter+1} optimization: ", tariff_history)
-    print(f"welfare history after {iter+1} optimization: ", welfare_history)
-    # Store the current state of the economic variables
-    temp_p = var.p_ijs.copy() 
-    temp_T = var.T.copy()
-    temp_pi = var.pi.copy()
-    temp_p_is = calculate_p_is(var.p_ijs)
-    temp_p_js = calculate_p_js(var.p_ijs)
 
     # Update economic variables with the new tau after all optimizations
     update_economic_variables(var.tau, j)
 
     # Recalculate p_is and p_js after updating tau
-    p_is = calculate_p_is(var.p_ijs)
-    p_js = calculate_p_js(var.p_ijs)
-
-    #print("p_js for iteration:", iter+1, p_js)
-
+    
+    #Delta 값 계산
+    changerate_pi = {country: {industry: (var.pi[country][industry] - temp_pi[country][industry])/temp_pi[country][industry] for industry in var.industries} for country in var.countries}
+    changerate_p_is = {i: {industry: (p_is[i][industry] - temp_p_is[i][industry])/ temp_p_is[i][industry] for industry in var.industries} for i in var.countries}
+    changerate_p_js = {j: {i:{industry: (p_js[j][i][industry] - temp_p_js[j][i][industry])/temp_p_js[j][i][industry] for industry in var.industries} for i in var.countries if i!=j} for j in var.countries}
+    changerate_T = {i: {j: {industry: (var.T[i][j][industry] - temp_T[i][j][industry])/temp_T[i][j][industry] for industry in var.industries} for j in var.countries if i != j} for i in var.countries}
+    
+    print("pi difference:" , ((var.pi[i][industry] - temp_pi[i][industry]) for i in var.countries for industry in var.industries))
+    print("p_is difference:" , ((p_is[i][industry] - temp_p_is[i][industry]) for i in var.countries for industry in var.industries))
+    print("T difference:" , ((var.T[i][j][industry] - temp_T[i][j][industry]) for i in var.countries for j in var.countries if i!=j for industry in var.industries))
+    print("p_js difference:" , ((p_js[i][j][industry] - p_js[i][j][industry]) for i in var.countries for j in var.countries if i!=j for industry in var.industries))
+    
     var.fill_pi()
     var.fill_gamma()
     var.fill_alpha()
@@ -344,12 +358,8 @@ for iter in range(iteration):
     # Recalculate gamma, var.pi, and alpha with new tau values
     update_hats(var.tau, var.t, var.pi)
 
-    #Delta 값 계산
-    changerate_pi = {country: {industry: (var.pi[country][industry] - temp_pi[country][industry])/temp_pi[country][industry] for industry in var.industries} for country in var.countries}
-    changerate_p_is = {i: {industry: (p_is[i][industry] - temp_p_is[i][industry])/ temp_p_is[i][industry] for industry in var.industries} for i in var.countries}
-    changerate_p_js = {j: {industry: (p_js[j][industry] - temp_p_js[j][industry])/temp_p_js[j][industry] for industry in var.industries} for j in var.countries}
-    changerate_T = {i: {j: {industry: (var.T[i][j][industry] - temp_T[i][j][industry])/temp_T[i][j][industry] for industry in var.industries} for j in var.countries if i != j} for i in var.countries}
-        # Call welfare_change with updated delta values
+
+    # Call welfare_change with updated delta values
     print("welfare change effect of iteration", (iter+1), welfare_change())
     print("\nCorresponding t values:")
     for i in var.countries:
