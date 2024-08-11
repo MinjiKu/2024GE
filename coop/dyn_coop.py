@@ -36,12 +36,16 @@ previous_tau = var.tau.copy()
 
 def update_economic_variables(tau, j):
     # Update t based on the new tau values
+    print("this is update econ vars")
+    print("update tau value")
+    print(tau)
+    # unflatten_dict(tau, j)
     for i in var.countries:
             if i==j: continue
             for industry in var.industries:
-                    # print("print t for", i, j, industry, ":", var.t[i][j][industry])
-                    # print("print tau for", i, j, industry, ":",tau[i][j][industry])
-                    var.t[i][j][industry] = max(var.tau[i][j][industry] - 100, 1e-10)
+                    print("print t for", i, j, industry, ":", var.t[i][j][industry])
+                    print("print tau for", i, j, industry, ":", tau[i][j][industry])
+                    # var.t[i][j][industry] = max(var.tau[i][j][industry] - 100, 1e-10)
 
     # Recalculate gamma, pi, and alpha based on the updated t values
     var.fill_gamma()
@@ -64,7 +68,7 @@ def calc_x(j, s):
         if i == j: continue
         TR += var.t[i][j][s] * var.T[i][j][s]
         # if j == 'China' or j == 'USA':
-        sum += (var.T[i][j][s] + var.de[s] * (var.tau5[i][j][s] - var.tau4[i][j][s]))
+        sum += (var.T[i][j][s] + var.de[s] * (var.tau[i][j][s] - previous_tau[i][j][s]))
         # else:
         #     sum += (var.T[i][j][s] + var.de[s] * (var.tau2[i][j][s] - var.tau[i][j][s]))
     
@@ -176,46 +180,35 @@ def update_hats(tau, t, pi):
         for s in var.industries:
             var.pi_hat[j][s] = abs(var.pi[j][s] / factual_pi[j][s])
 
-def flatten_tau(tau_dict):
-    flat_list = []
-    for importer, industries in tau_dict.items():
-        for industry, value in industries.items():
-            flat_list.extend(value.values())
-    return flat_list
+# def flatten_tau(tau_dict):
+#     flat_list = []
+#     for importer, industries in tau_dict.items():
+#         for industry, value in industries.items():
+#             flat_list.extend(value.values())
+#     return flat_list
 
 
-def unflatten_tau(flat_list, importer_name):
-    # idx = 0
-    # unflattened_tau = {j: {s: 0 for s in var.industries} for j in var.countries if j != importer_name}
-    # for importer in unflattened_tau:
-    #     for industry in var.industries:
-    #         unflattened_tau[importer][industry] = flat_list[idx]
-    #         idx += 1
-    # return unflattened_tau
-    unflattened_dict = {}
-    index = 0
-
-    # print("flat list")
-    # print(flat_list)
-    # print("\n")
+# def unflatten_tau(flat_list, importer_name):
+#     # idx = 0
+#     # unflattened_tau = {j: {s: 0 for s in var.industries} for j in var.countries if j != importer_name}
+#     # for importer in unflattened_tau:
+#     #     for industry in var.industries:
+#     #         unflattened_tau[importer][industry] = flat_list[idx]
+#     #         idx += 1
+#     # return unflattened_tau
+#     unflattened_dict = {}
+#     index = 0
     
-    for i in var.countries:
-        for j in var.countries:  # Iterate over all exporter keys
-            # if i == importer_name:  continue # Skip the importer itself
-            if i == j: continue
-            unflattened_dict[i] = {j: {}}  # Initialize the structure
-            for industry in var.industries:  # Iterate over all industries
-                unflattened_dict[i][j][industry] = flat_list[index]
-                index += 1
+#     for i in var.countries:
+#         for j in var.countries:  # Iterate over all exporter keys
+#             # if i == importer_name:  continue # Skip the importer itself
+#             if i == j: continue
+#             unflattened_dict[i] = {j: {}}  # Initialize the structure
+#             for industry in var.industries:  # Iterate over all industries
+#                 unflattened_dict[i][j][industry] = flat_list[index]
+#                 index += 1
 
-    # print("unflattened_dict")
-    # for i in var.countries:
-    #     for j in var.countries:
-    #         if i == j: continue
-    #         for s in var.industries:
-    #             print(unflattened_dict[i][j][s])
-
-    return unflattened_dict
+#     return unflattened_dict
 
 
 # Initialize a dictionary to store tariff values for each iteration
@@ -280,25 +273,57 @@ def calc_welfare2(j, s, tau_dict):
 
 calculate_cooperative_welfare_target()
 
-# Calculate the starting welfare for each country
-starting_welfare = {country: 0 for country in var.countries}
-for country in var.countries:
-    for exporter in var.countries:
-        if country == exporter: continue
-        starting_welfare[country] += welfare_gains[country][exporter]
+starting_welfare = {}
 
-print("starting welfare")
-print(starting_welfare)
-print("\n")
+def calculate_welfare_change():
+    global starting_welfare
+    # Calculate the starting welfare for each country
+    starting_welfare = {country: 0 for country in var.countries}
+    for country in var.countries:
+        for exporter in var.countries:
+            if country == exporter: continue
+            starting_welfare[country] += welfare_gains[country][exporter]
+
+    print("starting welfare")
+    print(starting_welfare)
+    print("\n")
 
 # ========== logic checked =================
 
-def cooperative_obj(tau_js, cooperative_welfare_target, j):
-    # print(f"tau_js: {tau_js}")
-    # print(f"cooperative_welfare_target: {cooperative_welfare_target}")
-    # print(f"Country: {j}")
+def flatten_dict(tau_dict, country):
+    flat_list = []
+    for i in tau_dict.keys():  # Iterate over all exporter keys
+        if i == country: continue
+        for industry in var.industries:  # Iterate over all industries
+            flat_list.append(tau_dict[country][i][industry])
+    return flat_list
 
-    tau_dict = unflatten_tau(tau_js, j)
+def unflatten_dict(flat_list, j):
+    print(f"Called unflatten_dict with flat_list of type {type(flat_list)}")
+    unflattened_dict = {}
+    index = 0
+
+    print("flat list")
+    print(flat_list)
+    print("\n")
+    
+    for i in var.countries:  # Iterate over all exporter keys
+        if i != j:  # Skip the importer itself
+            unflattened_dict[i] = {j: {}}  # Initialize the structure
+            for industry in var.industries:  # Iterate over all industries
+                unflattened_dict[i][j][industry] = flat_list[index] 
+                index += 1
+    
+    return unflattened_dict
+
+# helper functions
+
+def cooperative_obj(tau_js, cooperative_welfare_target, j):
+    print(f"tau_js: {tau_js}")
+    print(f"cooperative_welfare_target: {cooperative_welfare_target}")
+    print(f"Country: {j}")
+
+    tau_dict = unflatten_dict(tau_js, j)
 
     # print("tau_dict:", tau_dict)
 
@@ -329,33 +354,14 @@ def cooperative_obj(tau_js, cooperative_welfare_target, j):
 # print(result.x)
 
 
-def flatten_dict(tau_dict):
-    flat_list = []
-    for i in tau_dict.keys():  # Iterate over all exporter keys
-        for industry in var.industries:  # Iterate over all industries
-            flat_list.append(tau_dict[i][industry])
-    return flat_list
 
-def unflatten_dict(flat_list, j):
-    unflattened_dict = {}
-    index = 0
-
-    print("flat list")
-    print(flat_list)
-    print("\n")
-    
-    for i in var.countries:  # Iterate over all exporter keys
-        if i != j:  # Skip the importer itself
-            unflattened_dict[i] = {j: {}}  # Initialize the structure
-            for industry in var.industries:  # Iterate over all industries
-                unflattened_dict[i][j][industry] = flat_list[i][industry] #flat_list[index]
-                index += 1
-    
-    return unflattened_dict
 
 # -------------- changed ------------------
 def optimize(country):
-    initial_tau = flatten_tau(var.tau)
+    print("tau")
+    print(var.tau)
+    print("\n")
+    initial_tau = flatten_dict(var.tau, country)
     print("initial tau")
     print(initial_tau)
     print("\n")
@@ -377,7 +383,8 @@ def optimize(country):
     print("\n")
     # return result.x
     # Map the results back to the original tau structure
-    optimized_tau = unflatten_tau(result.x, country)
+    # optimized_tau = unflatten_tau(result.x, country)
+    optimized_tau = unflatten_dict(result.x, country)
 
     print("optimized tau")
     print(optimized_tau)
@@ -393,6 +400,7 @@ for country in var.countries:
     print(f"Optimizing for {country}...")
     result = optimize(country)
     optimization_results[country] = result
+    update_economic_variables(result, country)
 
     print(f"Optimization result for {country}:")
     print(optimization_results[country])
