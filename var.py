@@ -74,38 +74,38 @@ P_j = {'Germany':131.8924482,
 
 
 # tau = {i: {j: {industry: np.random.rand() + 1 for industry in industries} for j in countries} for i in countries}
-# tau = {
-#     'China': {
-#         'Korea': {'steel': 1, 'semi': 1, 'car': 1.059},
-#         'Japan': {'steel': 1, 'semi': 1, 'car': 1},
-#         'USA': {'steel': 1, 'semi': 1.25, 'car': 1.2275},
-#         'Germany': {'steel': 1.359, 'semi': 1, 'car': 1.03}
-#     },
-#     'Korea': {
-#         'China': {'steel': 1.005, 'semi': 1.01, 'car': 1.04},
-#         'Japan': {'steel': 1, 'semi': 1, 'car': 1},
-#         'USA': {'steel': 1, 'semi': 1, 'car': 1},
-#         'Germany': {'steel': 1, 'semi': 1, 'car': 1}
-#     },
-#     'Japan': {
-#         'China': {'steel': 1.044, 'semi': 1, 'car': 1.077},
-#         'Korea': {'steel': 1, 'semi': 1, 'car': 1.065},
-#         'USA': {'steel': 1, 'semi': 1, 'car': 1.0212},
-#         'Germany': {'steel': 1, 'semi': 1, 'car': 1}
-#     },
-#     'USA': {
-#         'China': {'steel': 1.05, 'semi': 1, 'car': 1.085},
-#         'Korea': {'steel': 1, 'semi': 1, 'car': 1},
-#         'Japan': {'steel': 1, 'semi': 1, 'car': 1},
-#         'Germany': {'steel': 1, 'semi': 1, 'car': 1.03}
-#     },
-#     'Germany': {
-#         'China': {'steel': 1.05, 'semi': 1, 'car': 1.085},
-#         'Korea': {'steel': 1, 'semi': 1, 'car': 1},
-#         'Japan': {'steel': 1, 'semi': 1, 'car': 1},
-#         'USA': {'steel': 1, 'semi': 1, 'car': 1.0212}
-#     }
-# }
+tau = {
+    'China': {
+        'Korea': {'steel': 1, 'semi': 1, 'car': 1.059},
+        'Japan': {'steel': 1, 'semi': 1, 'car': 1},
+        'USA': {'steel': 1, 'semi': 1.25, 'car': 1.2275},
+        'Germany': {'steel': 1.359, 'semi': 1, 'car': 1.03}
+    },
+    'Korea': {
+        'China': {'steel': 1.005, 'semi': 1.01, 'car': 1.04},
+        'Japan': {'steel': 1, 'semi': 1, 'car': 1},
+        'USA': {'steel': 1, 'semi': 1, 'car': 1},
+        'Germany': {'steel': 1, 'semi': 1, 'car': 1}
+    },
+    'Japan': {
+        'China': {'steel': 1.044, 'semi': 1, 'car': 1.077},
+        'Korea': {'steel': 1, 'semi': 1, 'car': 1.065},
+        'USA': {'steel': 1, 'semi': 1, 'car': 1.0212},
+        'Germany': {'steel': 1, 'semi': 1, 'car': 1}
+    },
+    'USA': {
+        'China': {'steel': 1.05, 'semi': 1, 'car': 1.085},
+        'Korea': {'steel': 1, 'semi': 1, 'car': 1},
+        'Japan': {'steel': 1, 'semi': 1, 'car': 1},
+        'Germany': {'steel': 1, 'semi': 1, 'car': 1.03}
+    },
+    'Germany': {
+        'China': {'steel': 1.05, 'semi': 1, 'car': 1.085},
+        'Korea': {'steel': 1, 'semi': 1, 'car': 1},
+        'Japan': {'steel': 1, 'semi': 1, 'car': 1},
+        'USA': {'steel': 1, 'semi': 1, 'car': 1.0212}
+    }
+}
 # # iteration 2
 # tau2 = {
 #     'China': {
