@@ -69,7 +69,7 @@ def calc_x(i, j, s, tau):
     # print(var.tau[i][j][s] - previous_tau[i][j][s])
     # sum += (var.T[i][j][s] + var.de[s] * (var.tau3[i][j][s] - previous_tau[i][j][s]))
     
-    # sum = var.w[j] * var.L_js[j][s] + var.pi[j][s] + var.L_js[j][s]/var.L_j[j] * TR
+    sum = var.w[j] * var.L_js[j][s] + var.pi[j][s] + var.L_js[j][s]/var.L_j[j] * TR
     
     return sum
 
