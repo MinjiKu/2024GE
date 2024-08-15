@@ -6,7 +6,7 @@ We focus on empirical analysis of South Korean economic policy direction amidst 
 
 ### Trade Wars and Trade Talks with Data
 * American Economic Reviews
-* Ralph Ossa, WTO Chief Economist
+* Ralph Ossa, WTO Chief Economist <br>
 Empirical analysis of noncooperative and cooperative trade policy. <br>
 A unified framework which nests traditional, new trade, and political economy motives for protection <br>
 Can provide immediate trade policy relevance / Suggest and provide plausibility for trade policy making <br>
