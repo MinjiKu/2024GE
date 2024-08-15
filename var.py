@@ -240,6 +240,40 @@ tau5 = {
     }
 }
 
+# iteration 5
+tau5 = {
+    'China': {
+        'Korea': {'steel': 1, 'semi': 1, 'car': 1.0},
+        'Japan': {'steel': 1, 'semi': 1, 'car': 1},
+        'USA': {'steel': 1.2, 'semi': 1.45, 'car': 1.4275},
+        'Germany': {'steel': 1.199, 'semi': 1, 'car': 1.00}
+    },
+    'Korea': {
+        'China': {'steel': 1.205, 'semi': 1.21, 'car': 1.24},
+        'Japan': {'steel': 1, 'semi': 1, 'car': 1},
+        'USA': {'steel': 1.2, 'semi': 1.2, 'car': 1.2},
+        'Germany': {'steel': 1, 'semi': 1, 'car': 1}
+    },
+    'Japan': {
+        'China': {'steel': 1.244, 'semi': 1.2, 'car': 1.277},
+        'Korea': {'steel': 1, 'semi': 1, 'car': 1.00},
+        'USA': {'steel': 1.2, 'semi': 1.2, 'car': 1.2212},
+        'Germany': {'steel': 1, 'semi': 1, 'car': 1}
+    },
+    'USA': {
+        'China': {'steel': 1.25, 'semi': 1.2, 'car': 1.285},
+        'Korea': {'steel': 1, 'semi': 1, 'car': 1},
+        'Japan': {'steel': 1, 'semi': 1, 'car': 1},
+        'Germany': {'steel': 1, 'semi': 1, 'car': 1.00}
+    },
+    'Germany': {
+        'China': {'steel': 1.25, 'semi': 1.2, 'car': 1.285},
+        'Korea': {'steel': 1, 'semi': 1, 'car': 1},
+        'Japan': {'steel': 1, 'semi': 1, 'car': 1},
+        'USA': {'steel': 1.2, 'semi': 1.2, 'car': 1.2212}
+    }
+}
+
 tau_temp = {country: {partner: {product: value * 100 for product, value in products.items()}
                for partner, products in partners.items()}
      for country, partners in tau.items()}
