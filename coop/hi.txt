@@ -1,0 +1,60 @@
+previous tau: tau
+current tau: tau2
+
+staring total welfare
+1488557754.3940685
+target
+297711550.8788137
+
+China
+530703022.204357
+Total welfare for China: 
+19490354.60556943
+
+Korea
+233029235.47576803
+Total welfare for Korea: 
+50107493.17817129
+
+Japan
+73757453.81303121
+Total welfare for Japan: 
+38460478.56608796
+
+USA
+545522978.324789
+Total welfare for USA: 
+105354.17579905526
+
+Germany
+105545064.57612333
+Total welfare for Germany: 
+18023140241.445065
+
+
+previous tau: tau2
+current tau: tau3
+
+staring total welfare
+5960235780.708441
+target
+1192047156.141688
+
+Total welfare for China: 
+4267200787.367749
+
+Total welfare for Korea: 
+6696472958.505669
+
+Total welfare for Japan: 
+2948728591.8228965
+
+Total welfare for USA: 
+4705772797.283721
+
+Total welfare for Germany: 
+7668286790.7823925
+
+iteration 4 & 5:
+staring total welfare
+5960235780.708441

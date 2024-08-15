@@ -20,6 +20,11 @@ for country in countries:
 
 # x = {country: {industry: np.random.rand() for industry in industries} for country in countries}
 
+def coop_lambda():
+    # Loop through each country and set the industry values to 1
+    for country in countries:
+        pol_econ[country] = {industry: 1 for industry in industries}
+
 x = { #우선 김은 임의로 100으로 채움
          #단위는 billion USD
     'Korea':{'steel':65.85, 'semi':19.8, 'car':188.856},
@@ -29,6 +34,7 @@ x = { #우선 김은 임의로 100으로 채움
     'Germany':{'steel':44.50, 'semi':41.2, 'car': 614.313}
 }
 
+# used when calculating welfare
 p_ijs = {
     'China': {
         'Germany': {'steel': 1.0582132952603989, 'semi': 0.8749017013649593, 'car': 22347.52148025721}, 
@@ -46,7 +52,7 @@ p_ijs = {
         'Korea': {'steel': 0.6452938452728846,  'semi': 2.576506085798766, 'car': 25945.71517654626}, 
         'USA': {'steel': 0.6924101202128765, 'semi': 5.473356193407144, 'car': 27683.734550894653}}, 
     'USA': {
-        'China': {'steel': 2.793492934160387, 'semi': 1.8820447349060032, 'car': 59753.32634173833}, 
+        'China': {'steel': 2.793492934160387, 'semi': 1.8820447349060032, 'car': 59753.32634173833, 'gim': 202.66666666666666}, 
         'Germany': {'steel': 0.9743858548405673, 'semi': 20.99480847346542, 'car': 45214.10895838236}, 
         'Japan': {'steel': 3.19057747932092, 'semi': 1.4593678187228334, 'car': 51928.2106433143}, 
         'Korea': {'steel': 3.5832969128690055, 'semi': 3.497620193153412, 'car': 47727.025701300736}}, 
@@ -68,7 +74,7 @@ P_j = {'Germany':131.8924482,
 
 
 # tau = {i: {j: {industry: np.random.rand() + 1 for industry in industries} for j in countries} for i in countries}
-tau= {
+tau = {
     'China': {
         'Korea': {'steel': 1, 'semi': 1, 'car': 1.059},
         'Japan': {'steel': 1, 'semi': 1, 'car': 1},
@@ -100,14 +106,314 @@ tau= {
         'USA': {'steel': 1, 'semi': 1, 'car': 1.0212}
     }
 }
-# tau = {country: {partner: {product: value * 100 for product, value in products.items()}
-#                for partner, products in partners.items()}
-#      for country, partners in tau_temp.items()}
+# # iteration 2
+# tau2 = {
+#     'China': {
+#         'Korea': {'steel': 1.05, 'semi': 1.05, 'car': 1.109},
+#         'Japan': {'steel': 1.05, 'semi': 1.05, 'car': 1.05},
+#         'USA': {'steel': 1, 'semi': 1.00, 'car': 1.20},
+#         'Germany': {'steel': 1.409, 'semi': 1.05, 'car': 1.08}
+#     },
+#     'Korea': {
+#         'China': {'steel': 1.00, 'semi': 1.0, 'car': 1.0},
+#         'Japan': {'steel': 1.05, 'semi': 1.05, 'car': 1.05},
+#         'USA': {'steel': 1, 'semi': 1, 'car': 1},
+#         'Germany': {'steel': 1.05, 'semi': 1.05, 'car': 1.05}
+#     },
+#     'Japan': {
+#         'China': {'steel': 1.0, 'semi': 1, 'car': 1.02},
+#         'Korea': {'steel': 1.05, 'semi': 1.05, 'car': 1.115},
+#         'USA': {'steel': 1, 'semi': 1, 'car': 1.0002},
+#         'Germany': {'steel': 1.05, 'semi': 1.05, 'car': 1.05}
+#     },
+#     'USA': {
+#         'China': {'steel': 1.00, 'semi': 1, 'car': 1.035},
+#         'Korea': {'steel': 1.05, 'semi': 1.05, 'car': 1.05},
+#         'Japan': {'steel': 1.05, 'semi': 1.05, 'car': 1.05},
+#         'Germany': {'steel': 1.05, 'semi': 1.05, 'car': 1.08}
+#     },
+#     'Germany': {
+#         'China': {'steel': 1.00, 'semi': 1, 'car': 1.035},
+#         'Korea': {'steel': 1.05, 'semi': 1.05, 'car': 1.05},
+#         'Japan': {'steel': 1.05, 'semi': 1.05, 'car': 1.05},
+#         'USA': {'steel': 1, 'semi': 1, 'car': 1.0012}
+#     }
+# }
+# # iteration 3
+# tau3 = {
+#     'China': {
+#         'Korea': {'steel': 1.1, 'semi': 1.1, 'car': 1.159},
+#         'Japan': {'steel': 1.15, 'semi': 1.15, 'car': 1.15},
+#         'USA': {'steel': 1, 'semi': 1.00, 'car': 1.00},
+#         'Germany': {'steel': 1.459, 'semi': 1.1, 'car': 1.13}
+#     },
+#     'Korea': {
+#         'China': {'steel': 1.00, 'semi': 1.0, 'car': 1.0},
+#         'Japan': {'steel': 1.1, 'semi': 1.1, 'car': 1.1},
+#         'USA': {'steel': 1, 'semi': 1, 'car': 1},
+#         'Germany': {'steel': 1.15, 'semi': 1.15, 'car': 1.15}
+#     },
+#     'Japan': {
+#         'China': {'steel': 1.0, 'semi': 1, 'car': 1.00},
+#         'Korea': {'steel': 1.1, 'semi': 1.1, 'car': 1.165},
+#         'USA': {'steel': 1, 'semi': 1, 'car': 1.000},
+#         'Germany': {'steel': 1.1, 'semi': 1.1, 'car': 1.1}
+#     },
+#     'USA': {
+#         'China': {'steel': 1.00, 'semi': 1, 'car': 1.0},
+#         'Korea': {'steel': 1.1, 'semi': 1.1, 'car': 1.1},
+#         'Japan': {'steel': 1.1, 'semi': 1.1, 'car': 1.1},
+#         'Germany': {'steel': 1.1, 'semi': 1.1, 'car': 1.13}
+#     },
+#     'Germany': {
+#         'China': {'steel': 1.00, 'semi': 1, 'car': 1.0},
+#         'Korea': {'steel': 1.1, 'semi': 1.1, 'car': 1.1},
+#         'Japan': {'steel': 1.1, 'semi': 1.1, 'car': 1.1},
+#         'USA': {'steel': 1, 'semi': 1, 'car': 1.00}
+#     }
+# }
+# # iteration 4
+# tau4 = {
+#     'China': {
+#         'Korea': {'steel': 1.15, 'semi': 1.15, 'car': 1.209},
+#         'Japan': {'steel': 1.20, 'semi': 1.2, 'car': 1.2},
+#         'USA': {'steel': 1, 'semi': 1.00, 'car': 1.00},
+#         'Germany': {'steel': 1.509, 'semi': 1.15, 'car': 1.18}
+#     },
+#     'Korea': {
+#         'China': {'steel': 1.00, 'semi': 1.0, 'car': 1.0},
+#         'Japan': {'steel': 1.15, 'semi': 1.15, 'car': 1.15},
+#         'USA': {'steel': 1, 'semi': 1, 'car': 1},
+#         'Germany': {'steel': 1.2, 'semi': 1.2, 'car': 1.2}
+#     },
+#     'Japan': {
+#         'China': {'steel': 1.0, 'semi': 1, 'car': 1.00},
+#         'Korea': {'steel': 1.15, 'semi': 1.15, 'car': 1.215},
+#         'USA': {'steel': 1, 'semi': 1, 'car': 1.000},
+#         'Germany': {'steel': 1.15, 'semi': 1.15, 'car': 1.15}
+#     },
+#     'USA': {
+#         'China': {'steel': 1.00, 'semi': 1, 'car': 1.0},
+#         'Korea': {'steel': 1.15, 'semi': 1.15, 'car': 1.15},
+#         'Japan': {'steel': 1.15, 'semi': 1.15, 'car': 1.15},
+#         'Germany': {'steel': 1.15, 'semi': 1.15, 'car': 1.18}
+#     },
+#     'Germany': {
+#         'China': {'steel': 1.00, 'semi': 1, 'car': 1.0},
+#         'Korea': {'steel': 1.15, 'semi': 1.15, 'car': 1.15},
+#         'Japan': {'steel': 1.15, 'semi': 1.15, 'car': 1.15},
+#         'USA': {'steel': 1, 'semi': 1, 'car': 1.00}
+#     }
+# }
+
+tau = {
+    'China': {
+        'Korea': {'steel': 1, 'semi': 1, 'car': 1.059},
+        'Japan': {'steel': 1, 'semi': 1, 'car': 1},
+        'USA': {'steel': 1, 'semi': 1.25, 'car': 1.2275},
+        'Germany': {'steel': 1.359, 'semi': 1, 'car': 1.03}
+    },
+    'Korea': {
+        'China': {'steel': 1.005, 'semi': 1.01, 'car': 1.04},
+        'Japan': {'steel': 1, 'semi': 1, 'car': 1},
+        'USA': {'steel': 1, 'semi': 1, 'car': 1},
+        'Germany': {'steel': 1, 'semi': 1, 'car': 1}
+    },
+    'Japan': {
+        'China': {'steel': 1.044, 'semi': 1, 'car': 1.077},
+        'Korea': {'steel': 1, 'semi': 1, 'car': 1.065},
+        'USA': {'steel': 1, 'semi': 1, 'car': 1.0212},
+        'Germany': {'steel': 1, 'semi': 1, 'car': 1}
+    },
+    'USA': {
+        'China': {'steel': 1.05, 'semi': 1, 'car': 1.085},
+        'Korea': {'steel': 1, 'semi': 1, 'car': 1},
+        'Japan': {'steel': 1, 'semi': 1, 'car': 1},
+        'Germany': {'steel': 1, 'semi': 1, 'car': 1.03}
+    },
+    'Germany': {
+        'China': {'steel': 1.05, 'semi': 1, 'car': 1.085},
+        'Korea': {'steel': 1, 'semi': 1, 'car': 1},
+        'Japan': {'steel': 1, 'semi': 1, 'car': 1},
+        'USA': {'steel': 1, 'semi': 1, 'car': 1.0212}
+    }
+}
+# iteration 2
+tau2 = {
+    'China': {
+        'Korea': {'steel': 1, 'semi': 1, 'car': 1.029},
+        'Japan': {'steel': 1, 'semi': 1, 'car': 1},
+        'USA': {'steel': 1.05, 'semi': 1.3, 'car': 1.2775},
+        'Germany': {'steel': 1.319, 'semi': 1, 'car': 1.00}
+    },
+    'Korea': {
+        'China': {'steel': 1.055, 'semi': 1.06, 'car': 1.09},
+        'Japan': {'steel': 1, 'semi': 1, 'car': 1},
+        'USA': {'steel': 1.05, 'semi': 1.05, 'car': 1.05},
+        'Germany': {'steel': 1, 'semi': 1, 'car': 1}
+    },
+    'Japan': {
+        'China': {'steel': 1.094, 'semi': 1.05, 'car': 1.127},
+        'Korea': {'steel': 1, 'semi': 1, 'car': 1.035},
+        'USA': {'steel': 1.05, 'semi': 1.05, 'car': 1.0712},
+        'Germany': {'steel': 1, 'semi': 1, 'car': 1}
+    },
+    'USA': {
+        'China': {'steel': 1.1, 'semi': 1.05, 'car': 1.135},
+        'Korea': {'steel': 1, 'semi': 1, 'car': 1},
+        'Japan': {'steel': 1, 'semi': 1, 'car': 1},
+        'Germany': {'steel': 1, 'semi': 1, 'car': 1.00}
+    },
+    'Germany': {
+        'China': {'steel': 1.1, 'semi': 1.05, 'car': 1.135},
+        'Korea': {'steel': 1, 'semi': 1, 'car': 1},
+        'Japan': {'steel': 1, 'semi': 1, 'car': 1},
+        'USA': {'steel': 1.05, 'semi': 1.05, 'car': 1.0712}
+    }
+}
+# iteration 3
+tau3 = {
+    'China': {
+        'Korea': {'steel': 1, 'semi': 1, 'car': 1.0},
+        'Japan': {'steel': 1, 'semi': 1, 'car': 1},
+        'USA': {'steel': 1.1, 'semi': 1.35, 'car': 1.3275},
+        'Germany': {'steel': 1.279, 'semi': 1, 'car': 1.00}
+    },
+    'Korea': {
+        'China': {'steel': 1.105, 'semi': 1.11, 'car': 1.14},
+        'Japan': {'steel': 1, 'semi': 1, 'car': 1},
+        'USA': {'steel': 1.1, 'semi': 1.1, 'car': 1.1},
+        'Germany': {'steel': 1, 'semi': 1, 'car': 1}
+    },
+    'Japan': {
+        'China': {'steel': 1.144, 'semi': 1.1, 'car': 1.177},
+        'Korea': {'steel': 1, 'semi': 1, 'car': 1.005},
+        'USA': {'steel': 1.1, 'semi': 1.1, 'car': 1.1212},
+        'Germany': {'steel': 1, 'semi': 1, 'car': 1}
+    },
+    'USA': {
+        'China': {'steel': 1.15, 'semi': 1.1, 'car': 1.185},
+        'Korea': {'steel': 1, 'semi': 1, 'car': 1},
+        'Japan': {'steel': 1, 'semi': 1, 'car': 1},
+        'Germany': {'steel': 1, 'semi': 1, 'car': 1.00}
+    },
+    'Germany': {
+        'China': {'steel': 1.15, 'semi': 1.1, 'car': 1.185},
+        'Korea': {'steel': 1, 'semi': 1, 'car': 1},
+        'Japan': {'steel': 1, 'semi': 1, 'car': 1},
+        'USA': {'steel': 1.1, 'semi': 1.1, 'car': 1.1212}
+    }
+}
+# iteration 4
+tau4 = {
+    'China': {
+        'Korea': {'steel': 1, 'semi': 1, 'car': 1.0},
+        'Japan': {'steel': 1, 'semi': 1, 'car': 1},
+        'USA': {'steel': 1.15, 'semi': 1.4, 'car': 1.3775},
+        'Germany': {'steel': 1.239, 'semi': 1, 'car': 1.00}
+    },
+    'Korea': {
+        'China': {'steel': 1.155, 'semi': 1.16, 'car': 1.19},
+        'Japan': {'steel': 1, 'semi': 1, 'car': 1},
+        'USA': {'steel': 1.15, 'semi': 1.15, 'car': 1.15},
+        'Germany': {'steel': 1, 'semi': 1, 'car': 1}
+    },
+    'Japan': {
+        'China': {'steel': 1.194, 'semi': 1.15, 'car': 1.227},
+        'Korea': {'steel': 1, 'semi': 1, 'car': 1.00},
+        'USA': {'steel': 1.15, 'semi': 1.15, 'car': 1.1712},
+        'Germany': {'steel': 1, 'semi': 1, 'car': 1}
+    },
+    'USA': {
+        'China': {'steel': 1.2, 'semi': 1.15, 'car': 1.235},
+        'Korea': {'steel': 1, 'semi': 1, 'car': 1},
+        'Japan': {'steel': 1, 'semi': 1, 'car': 1},
+        'Germany': {'steel': 1, 'semi': 1, 'car': 1.00}
+    },
+    'Germany': {
+        'China': {'steel': 1.2, 'semi': 1.15, 'car': 1.235},
+        'Korea': {'steel': 1, 'semi': 1, 'car': 1},
+        'Japan': {'steel': 1, 'semi': 1, 'car': 1},
+        'USA': {'steel': 1.15, 'semi': 1.15, 'car': 1.1712}
+    }
+}
+
+# iteration 5
+tau5 = {
+    'China': {
+        'Korea': {'steel': 1, 'semi': 1, 'car': 1.0},
+        'Japan': {'steel': 1, 'semi': 1, 'car': 1},
+        'USA': {'steel': 1.2, 'semi': 1.45, 'car': 1.4275},
+        'Germany': {'steel': 1.199, 'semi': 1, 'car': 1.00}
+    },
+    'Korea': {
+        'China': {'steel': 1.205, 'semi': 1.21, 'car': 1.24},
+        'Japan': {'steel': 1, 'semi': 1, 'car': 1},
+        'USA': {'steel': 1.2, 'semi': 1.2, 'car': 1.2},
+        'Germany': {'steel': 1, 'semi': 1, 'car': 1}
+    },
+    'Japan': {
+        'China': {'steel': 1.244, 'semi': 1.2, 'car': 1.277},
+        'Korea': {'steel': 1, 'semi': 1, 'car': 1.00},
+        'USA': {'steel': 1.2, 'semi': 1.2, 'car': 1.2212},
+        'Germany': {'steel': 1, 'semi': 1, 'car': 1}
+    },
+    'USA': {
+        'China': {'steel': 1.25, 'semi': 1.2, 'car': 1.285},
+        'Korea': {'steel': 1, 'semi': 1, 'car': 1},
+        'Japan': {'steel': 1, 'semi': 1, 'car': 1},
+        'Germany': {'steel': 1, 'semi': 1, 'car': 1.00}
+    },
+    'Germany': {
+        'China': {'steel': 1.25, 'semi': 1.2, 'car': 1.285},
+        'Korea': {'steel': 1, 'semi': 1, 'car': 1},
+        'Japan': {'steel': 1, 'semi': 1, 'car': 1},
+        'USA': {'steel': 1.2, 'semi': 1.2, 'car': 1.2212}
+    }
+}
+
+# iteration 5
+tau5 = {
+    'China': {
+        'Korea': {'steel': 1, 'semi': 1, 'car': 1.0},
+        'Japan': {'steel': 1, 'semi': 1, 'car': 1},
+        'USA': {'steel': 1.2, 'semi': 1.45, 'car': 1.4275},
+        'Germany': {'steel': 1.199, 'semi': 1, 'car': 1.00}
+    },
+    'Korea': {
+        'China': {'steel': 1.205, 'semi': 1.21, 'car': 1.24},
+        'Japan': {'steel': 1, 'semi': 1, 'car': 1},
+        'USA': {'steel': 1.2, 'semi': 1.2, 'car': 1.2},
+        'Germany': {'steel': 1, 'semi': 1, 'car': 1}
+    },
+    'Japan': {
+        'China': {'steel': 1.244, 'semi': 1.2, 'car': 1.277},
+        'Korea': {'steel': 1, 'semi': 1, 'car': 1.00},
+        'USA': {'steel': 1.2, 'semi': 1.2, 'car': 1.2212},
+        'Germany': {'steel': 1, 'semi': 1, 'car': 1}
+    },
+    'USA': {
+        'China': {'steel': 1.25, 'semi': 1.2, 'car': 1.285},
+        'Korea': {'steel': 1, 'semi': 1, 'car': 1},
+        'Japan': {'steel': 1, 'semi': 1, 'car': 1},
+        'Germany': {'steel': 1, 'semi': 1, 'car': 1.00}
+    },
+    'Germany': {
+        'China': {'steel': 1.25, 'semi': 1.2, 'car': 1.285},
+        'Korea': {'steel': 1, 'semi': 1, 'car': 1},
+        'Japan': {'steel': 1, 'semi': 1, 'car': 1},
+        'USA': {'steel': 1.2, 'semi': 1.2, 'car': 1.2212}
+    }
+}
+
+tau_temp = {country: {partner: {product: value * 100 for product, value in products.items()}
+               for partner, products in partners.items()}
+     for country, partners in tau.items()}
 
 
 sigma = {'gim': 3.57, 'steel': 4.0, 'semi': 2.5, 'car': 1.8}
 
-t= {'Korea': {'USA': {'steel': 1e-10, 'semi': 1e-10, 'car': 1e-10}, 
+t = {'Korea': {'USA': {'steel': 1e-10, 'semi': 1e-10, 'car': 1e-10}, 
                'China': {'steel': 0.005, 'semi': 0.01, 'car': 0.04}, 
                'Japan': {'steel': 1e-10, 'semi': 1e-10, 'car': 1e-10}, 
                'Germany': {'steel': 1e-10, 'semi': 1e-10, 'car': 1e-10}}, 
@@ -197,17 +503,17 @@ L_j = {'Korea':29.5, 'USA':171, 'China':780, 'Japan':69.3, 'Germany':44.4} #mill
 #demand elasticity
 de = {'steel':0.5, 'semi':0.5, 'car':1.5}
 
-gamma_denom = {j: {industry: 1e-5 for industry in industries} for j in countries}
+gamma_denom = {j: {industry: 0 for industry in industries} for j in countries}
 
 def fill_gamma_denom():
     for j in countries:
         for s in industries:
-            gamma_denom[j][s] = 0
+            # gamma_denom[j][s] = 0
             for m in countries:
                 if m != j:
                     gamma_denom[j][s] += tau[m][j][s] * T[m][j][s]
-                    
                 
+
 def fill_gamma():
     fill_gamma_denom()
     for i in countries:
@@ -225,7 +531,7 @@ fill_gamma()
 # print("gamma_denom: ")
 # print(gamma_denom)
 # print("\n")
-pi = {country: {industry: 0 for industry in industries} for country in countries}
+
 def fill_pi():
     for j in countries:
         for s in industries:
@@ -233,34 +539,25 @@ def fill_pi():
                 if i != j:
                     pi_value = 1 / sigma[s] * T[i][j][s]
                     pi[j][s] += max(pi_value, epsilon)
-                    #print(f"pi[{j}][{s}] after fill = {pi[j][s]}")
 fill_pi()
 factual_pi = pi.copy() #factual pi 보존
 
-# Reset alpha and alpha_denom before filling them
-alpha = {i: {j: {industry: 0 for industry in industries} for j in countries if i != j} for i in countries}
-alpha_denom = {i: {industry: 0 for industry in industries} for i in countries}
+alpha_denom = {j: {industry: 0 for industry in industries} for j in countries}
 
 def fill_alpha_denom():
-    # Reset alpha_denom at the start
     for i in countries:
         for s in industries:
-            alpha_denom[i][s] = 0
             for n in countries:
                 if i != n:
-                    alpha_denom[i][s] += T[i][n][s]  # Accumulate trade volumes
+                    alpha_denom[i][s] += T[i][n][s]            
 
 def fill_alpha():
-    fill_alpha_denom()  # Ensure alpha_denom is correctly filled before using it
-    # Reset alpha at the start
+    fill_alpha_denom()
     for i in countries:
         for j in countries:
             if i == j:
                 continue  # Skip the case where i == j
             for s in industries:
-                if alpha_denom[i][s] == 0:
-                    print(f"Warning: alpha_denom[{i}][{s}] is zero, skipping division.")
-                    continue  # Skip this iteration if the denominator is zero
                 alpha_value = T[i][j][s] / alpha_denom[i][s]
                 alpha[i][j][s] = max(alpha_value, epsilon)  # Ensure no zero values
 

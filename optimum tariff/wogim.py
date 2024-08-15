@@ -360,34 +360,38 @@ for i in countries:
         if j == i:
             continue
         # initial_tau_js = np.random.rand(num_industries * (num_countries - 1)) * 0.5 + 1.0
+        initial_tau_js = tau[i][j]
 
-        initial_tau_js = {
-            "China": {
-                "steel": 1.03725,
-                "semi": 1.00250,
-                "car": 1.07175
-            },
-            "Korea": {
-                "steel": 1.000,
-                "semi": 1.000,
-                "car": 1.031
-            },
-            "Japan": {
-                "steel": 1.000,
-                "semi": 1.000,
-                "car": 1.000
-            },
-            "USA": {
-                "steel": 1.000000,
-                "semi": 1.062500,
-                "car": 1.067475
-            },
-            "Germany": {
-                "steel": 1.08975,
-                "semi": 1.00000,
-                "car": 1.01500
-            }
-        }
+        print("initial tau js")
+        print(initial_tau_js)
+
+        # initial_tau_js = {
+        #     "China": {
+        #         "steel": 1.03725,
+        #         "semi": 1.00250,
+        #         "car": 1.07175
+        #     },
+        #     "Korea": {
+        #         "steel": 1.000,
+        #         "semi": 1.000,
+        #         "car": 1.031
+        #     },
+        #     "Japan": {
+        #         "steel": 1.000,
+        #         "semi": 1.000,
+        #         "car": 1.000
+        #     },
+        #     "USA": {
+        #         "steel": 1.000000,
+        #         "semi": 1.062500,
+        #         "car": 1.067475
+        #     },
+        #     "Germany": {
+        #         "steel": 1.08975,
+        #         "semi": 1.00000,
+        #         "car": 1.01500
+        #     }
+        # }
 
         # Flatten the tau_js dictionary into a list
         flattened_tau_js = [value for country in initial_tau_js.values() for value in country.values()]
@@ -403,12 +407,15 @@ for i in countries:
         #     for m, country in enumerate(countries):
         #         if country != i:
         #             optimal_taus[country][industry] = result.x[k * num_countries + m]
-        for k, industry in enumerate(industries):
+        
+        line_idx = 0
+        for country in countries:    
             idx = 0
-            for country in countries:
+            for k, industry in enumerate(industries):
                 if country != i:
-                    optimal_taus[country][industry] = result.x[k * (num_countries - 1) + idx]
+                    optimal_taus[country][industry] = result.x[idx + line_idx * num_industries]
                     idx += 1
+            line_idx += 1
 
 
 
