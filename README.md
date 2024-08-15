@@ -13,7 +13,7 @@ Can provide immediate trade policy relevance / Suggest and provide plausibility 
 
 ### Optimum Tariffs and Retaliation
 * The Review of Economic Studies, Oxford University Press
-* Harry G. Johnson
+* Harry G. Johnson <br>
 Theoretical Analysis <br>
 Proof that country may gain by imposing a tariff, even if other countries retaliate <br>
 Determine the condition under which it will gain in one special case <br>
